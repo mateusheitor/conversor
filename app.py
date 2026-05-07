@@ -6,6 +6,7 @@ Escritório de Contabilidade | Agno + Mistral
 import json
 import os
 import tempfile
+import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -219,10 +220,9 @@ if processar:
             tmp_pdf.write(arquivo_pdf.read())
             caminho_tmp = tmp_pdf.name
 
-        # Define saída temporária
+        # Define saída temporária (apenas o caminho, sem criar o arquivo 0 bytes)
         nome_saida = arquivo_pdf.name.replace(".pdf", "_extraido.xlsx")
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_excel:
-            caminho_saida = tmp_excel.name
+        caminho_saida = os.path.join(tempfile.gettempdir(), f"excel_{uuid.uuid4().hex}.xlsx")
 
         try:
             with st.spinner(f"🤖 IA analisando {arquivo_pdf.name}..."):
@@ -232,9 +232,9 @@ if processar:
                     campos_desejados=campos_lista if campos_lista else None,
                 )
 
-            # Lê o arquivo para a memória
+            # Lê o arquivo para a memória apenas se ele foi realmente criado e não está vazio
             excel_data = None
-            if Path(caminho_saida).exists():
+            if Path(caminho_saida).exists() and Path(caminho_saida).stat().st_size > 0:
                 with open(caminho_saida, "rb") as f:
                     excel_data = f.read()
 
