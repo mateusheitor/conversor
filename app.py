@@ -27,43 +27,75 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Ocultar marca d'água do Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
     .main-title {
-        font-size: 2rem;
+        font-size: 2.8rem;
         font-weight: 700;
-        color: #1F4E79;
+        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin-bottom: 0.2rem;
+        padding-top: 1rem;
     }
     .sub-title {
-        font-size: 1rem;
-        color: #555;
+        font-size: 1.1rem;
+        color: #64748b;
+        font-weight: 500;
         margin-bottom: 2rem;
     }
-    .status-box {
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
     .tag-chip {
-        display: inline-block;
-        background: #E8F4FD;
-        color: #1F4E79;
-        border: 1px solid #AED6F1;
-        border-radius: 20px;
-        padding: 2px 12px;
-        margin: 3px;
+        display: inline-flex;
+        align-items: center;
+        background: #f1f5f9;
+        color: #334155;
+        border-radius: 16px;
+        padding: 4px 14px;
+        margin: 4px;
         font-size: 0.85rem;
+        font-weight: 500;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+    }
+    .tag-chip-primary {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
     }
     .stButton > button {
-        background-color: #1F4E79;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         color: white;
-        font-weight: bold;
-        border-radius: 8px;
-        padding: 0.5rem 2rem;
-        width: 100%;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 0.6rem 2rem;
         border: none;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.2s ease-in-out;
     }
     .stButton > button:hover {
-        background-color: #154360;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(135deg, #152d5b 0%, #1e3c72 100%);
+    }
+    [data-testid="stFileUploadDropzone"] {
+        background-color: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 2rem;
+        transition: all 0.2s;
+    }
+    [data-testid="stFileUploadDropzone"]:hover {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -71,10 +103,8 @@ st.markdown("""
 # ──────────────────────────────────────────────
 # CABEÇALHO
 # ──────────────────────────────────────────────
-col_logo, col_titulo = st.columns([1, 10])
-with col_titulo:
-    st.markdown('<div class="main-title">📊 Agente PDF → Excel</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Escritório de Contabilidade · Powered by <b>Agno</b> + <b>Mistral AI</b></div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">📊 Agente PDF → Excel</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Automação Contábil Inteligente • Powered by <b>Agno</b> + <b>Mistral AI</b></div>', unsafe_allow_html=True)
 
 st.divider()
 
@@ -173,7 +203,7 @@ with col2:
 
     if campos_lista:
         st.markdown("**Campos:**")
-        chips_html = "".join([f'<span class="tag-chip">{c}</span>' for c in campos_lista])
+        chips_html = "".join([f'<span class="tag-chip tag-chip-primary">{c}</span>' for c in campos_lista])
         st.markdown(chips_html, unsafe_allow_html=True)
     else:
         st.info("🤖 A IA irá detectar e extrair automaticamente os campos relevantes.")
