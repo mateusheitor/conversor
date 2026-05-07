@@ -219,11 +219,10 @@ if processar:
             tmp_pdf.write(arquivo_pdf.read())
             caminho_tmp = tmp_pdf.name
 
-        # Define saída
+        # Define saída temporária
         nome_saida = arquivo_pdf.name.replace(".pdf", "_extraido.xlsx")
-        pasta_saida = Path(r"C:\Users\mateu\OneDrive\Documentos\PDF")
-        pasta_saida.mkdir(parents=True, exist_ok=True)
-        caminho_saida = str(pasta_saida / nome_saida)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_excel:
+            caminho_saida = tmp_excel.name
 
         try:
             with st.spinner(f"🤖 IA analisando {arquivo_pdf.name}..."):
@@ -233,23 +232,32 @@ if processar:
                     campos_desejados=campos_lista if campos_lista else None,
                 )
 
+            # Lê o arquivo para a memória
+            excel_data = None
+            if Path(caminho_saida).exists():
+                with open(caminho_saida, "rb") as f:
+                    excel_data = f.read()
+
             resultados.append({
                 "nome": arquivo_pdf.name,
-                "saida": caminho_saida,
+                "nome_saida": nome_saida,
+                "excel_data": excel_data,
                 "resposta": resposta,
-                "sucesso": Path(caminho_saida).exists(),
+                "sucesso": excel_data is not None,
             })
 
         except Exception as e:
             resultados.append({
                 "nome": arquivo_pdf.name,
-                "saida": None,
+                "nome_saida": nome_saida,
+                "excel_data": None,
                 "resposta": str(e),
                 "sucesso": False,
             })
 
         finally:
             Path(caminho_tmp).unlink(missing_ok=True)
+            Path(caminho_saida).unlink(missing_ok=True)
 
         progress.progress((i + 1) / len(arquivos_pdf), text=f"Processado: {i+1}/{len(arquivos_pdf)}")
 
@@ -268,14 +276,13 @@ if processar:
                 st.success("Extração concluída com sucesso!")
 
                 # Download do Excel
-                with open(resultado["saida"], "rb") as f:
-                    st.download_button(
-                        label=f"⬇️ Baixar Excel — {Path(resultado['saida']).name}",
-                        data=f.read(),
-                        file_name=Path(resultado["saida"]).name,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                    )
+                st.download_button(
+                    label=f"⬇️ Baixar Excel — {resultado['nome_saida']}",
+                    data=resultado["excel_data"],
+                    file_name=resultado["nome_saida"],
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                )
             else:
                 st.error("Falha no processamento")
 
