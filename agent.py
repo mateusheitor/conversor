@@ -80,7 +80,16 @@ def extrair_texto_pdf(caminho_pdf: str) -> str:
                     linhas_formatadas.append(" | ".join(linha_limpa))
                 texto_completo.append(f"--- Tabela {j} (Pág {i}) ---\n" + "\n".join(linhas_formatadas))
 
-    return "\n\n".join(texto_completo) if texto_completo else "AVISO: Nenhum texto extraível encontrado no PDF."
+    texto_final = "\n\n".join(texto_completo) if texto_completo else "AVISO: Nenhum texto extraível encontrado no PDF."
+    
+    # Limite seguro de caracteres para evitar o erro de contexto máximo (262k tokens do Mistral)
+    # 800.000 caracteres equivalem a aproximadamente 200.000 tokens.
+    limite_caracteres = 800_000
+    if len(texto_final) > limite_caracteres:
+        texto_final = texto_final[:limite_caracteres]
+        texto_final += "\n\n[AVISO DO SISTEMA: O PDF é extremamente grande e teve seu conteúdo cortado para caber no limite de memória da IA. Alguns dados do final do arquivo podem não ser extraídos.]"
+        
+    return texto_final
 
 
 @tool
