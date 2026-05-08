@@ -297,7 +297,7 @@ Após salvar o Excel, informe ao usuário:
         model=MistralChat(
             id="mistral-large-latest",
             api_key=MISTRAL_API_KEY,
-            client_params={"timeout_ms": 600_000},  # 10 minutos
+            client_params={"timeout_ms": 1_800_000},  # 30 minutos
         ),
         tools=[extrair_texto_pdf, identificar_tipo_documento, salvar_excel],
         instructions=instrucoes,
