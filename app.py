@@ -21,7 +21,7 @@ import streamlit as st
 st.set_page_config(
     page_title="PDF → Excel Inteligente",
     page_icon="📄",
-    layout="centered",
+    layout="wide",
 )
 
 st.markdown("""
@@ -40,6 +40,17 @@ st.markdown("""
         background-color: #f5f0e8 !important;
     }
 
+    /* ── Container central responsivo ── */
+    /* Remove o padding lateral excessivo do layout wide */
+    .block-container {
+        max-width: min(820px, 92vw) !important;
+        padding-left: clamp(1rem, 4vw, 3rem) !important;
+        padding-right: clamp(1rem, 4vw, 3rem) !important;
+        padding-top: clamp(1.5rem, 4vh, 3rem) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
     /* Esconde itens padrão do Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -52,17 +63,17 @@ st.markdown("""
         gap: 6px;
         background: #1a1a0e;
         color: #c8b877;
-        font-size: 0.72rem;
+        font-size: clamp(0.6rem, 1.2vw, 0.75rem);
         font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        padding: 5px 12px;
+        padding: clamp(4px, 0.6vw, 6px) clamp(10px, 1.5vw, 14px);
         border-radius: 20px;
-        margin-bottom: 18px;
+        margin-bottom: clamp(12px, 2vh, 20px);
     }
     .hero-badge .dot {
-        width: 7px;
-        height: 7px;
+        width: clamp(6px, 0.8vw, 8px);
+        height: clamp(6px, 0.8vw, 8px);
         background: #6bcb77;
         border-radius: 50%;
         display: inline-block;
@@ -70,11 +81,11 @@ st.markdown("""
 
     .hero-title {
         font-family: 'Playfair Display', serif;
-        font-size: 2.6rem;
+        font-size: clamp(1.8rem, 4vw, 3rem);
         font-weight: 700;
         line-height: 1.15;
         color: #1a1a0e;
-        margin-bottom: 0.6rem;
+        margin-bottom: clamp(0.4rem, 1vh, 0.8rem);
     }
     .hero-title em {
         font-style: italic;
@@ -82,28 +93,28 @@ st.markdown("""
     }
 
     .hero-subtitle {
-        font-size: 0.97rem;
+        font-size: clamp(0.82rem, 1.5vw, 1rem);
         color: #5a5642;
-        margin-bottom: 2.2rem;
-        max-width: 440px;
+        margin-bottom: clamp(1.4rem, 3vh, 2.5rem);
+        max-width: 90%;
         line-height: 1.6;
     }
 
     /* ── Seções ── */
     .section-label {
-        font-size: 0.65rem;
+        font-size: clamp(0.58rem, 1vw, 0.68rem);
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: #8a8068;
-        margin-bottom: 10px;
-        margin-top: 6px;
+        margin-bottom: clamp(6px, 1.2vh, 12px);
+        margin-top: clamp(4px, 0.8vh, 8px);
     }
 
     /* ── Upload box ── */
     [data-testid="stFileUploadDropzone"] {
-        border-radius: 14px !important;
-        padding: 2.2rem 1.5rem !important;
+        border-radius: clamp(10px, 1.5vw, 16px) !important;
+        padding: clamp(1.2rem, 3vh, 2.5rem) clamp(1rem, 2vw, 2rem) !important;
         background-color: #faf7ef !important;
         border: 1.5px dashed #c8b877 !important;
         transition: all 0.2s ease !important;
@@ -114,27 +125,27 @@ st.markdown("""
     }
     [data-testid="stFileUploadDropzone"] p {
         color: #5a5642 !important;
-        font-size: 0.88rem !important;
+        font-size: clamp(0.78rem, 1.3vw, 0.92rem) !important;
     }
     [data-testid="stFileUploadDropzone"] small {
         color: #a09878 !important;
-        font-size: 0.76rem !important;
+        font-size: clamp(0.68rem, 1.1vw, 0.8rem) !important;
     }
 
     /* ── Pills de tipo ── */
     .pills-row {
         display: flex;
-        gap: 8px;
+        gap: clamp(6px, 1vw, 10px);
         flex-wrap: wrap;
-        margin-top: 10px;
+        margin-top: clamp(8px, 1.2vh, 12px);
         margin-bottom: 4px;
     }
     .pill {
         background: #ede8d8;
         color: #5a5642;
-        font-size: 0.74rem;
+        font-size: clamp(0.66rem, 1.1vw, 0.78rem);
         font-weight: 500;
-        padding: 4px 13px;
+        padding: clamp(3px, 0.5vh, 5px) clamp(10px, 1.5vw, 15px);
         border-radius: 20px;
         border: 1px solid #d0c9b0;
         cursor: default;
@@ -144,10 +155,10 @@ st.markdown("""
     [data-testid="stSelectbox"] > div > div {
         background-color: #1a1a0e !important;
         color: #c8b877 !important;
-        border-radius: 10px !important;
+        border-radius: clamp(8px, 1vw, 12px) !important;
         border: none !important;
         font-weight: 600 !important;
-        font-size: 0.88rem !important;
+        font-size: clamp(0.78rem, 1.2vw, 0.92rem) !important;
     }
     [data-testid="stSelectbox"] svg {
         fill: #c8b877 !important;
@@ -157,9 +168,9 @@ st.markdown("""
     [data-testid="stTextArea"] textarea {
         background-color: #faf7ef !important;
         border: 1.5px solid #d0c9b0 !important;
-        border-radius: 10px !important;
+        border-radius: clamp(8px, 1vw, 12px) !important;
         color: #1a1a0e !important;
-        font-size: 0.86rem !important;
+        font-size: clamp(0.78rem, 1.2vw, 0.9rem) !important;
         font-family: 'Inter', monospace !important;
     }
     [data-testid="stTextArea"] textarea:focus {
@@ -171,25 +182,26 @@ st.markdown("""
     [data-testid="stWidgetLabel"] p,
     label {
         color: #3d3922 !important;
-        font-size: 0.82rem !important;
+        font-size: clamp(0.74rem, 1.1vw, 0.86rem) !important;
         font-weight: 500 !important;
     }
 
     /* ── Expander (Chave de API) ── */
     [data-testid="stExpander"] {
         border: 1.5px solid #d0c9b0 !important;
-        border-radius: 12px !important;
+        border-radius: clamp(10px, 1.2vw, 14px) !important;
         background-color: #faf7ef !important;
     }
     [data-testid="stExpander"] summary {
         color: #5a5642 !important;
-        font-size: 0.84rem !important;
+        font-size: clamp(0.76rem, 1.2vw, 0.88rem) !important;
     }
     [data-testid="stTextInput"] input {
         background-color: #faf7ef !important;
         border: 1.5px solid #d0c9b0 !important;
         border-radius: 8px !important;
         color: #1a1a0e !important;
+        font-size: clamp(0.78rem, 1.2vw, 0.9rem) !important;
     }
 
     /* ── Botão primário ── */
@@ -198,10 +210,10 @@ st.markdown("""
         background-color: #1a1a0e !important;
         color: #c8b877 !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: clamp(8px, 1vw, 12px) !important;
         font-weight: 600 !important;
-        font-size: 0.92rem !important;
-        padding: 0.6rem 1.2rem !important;
+        font-size: clamp(0.82rem, 1.4vw, 0.98rem) !important;
+        padding: clamp(0.5rem, 1.2vh, 0.75rem) clamp(1rem, 2vw, 1.5rem) !important;
         transition: all 0.2s ease !important;
         letter-spacing: 0.02em;
     }
@@ -214,9 +226,9 @@ st.markdown("""
     /* ── Rodapé segurança ── */
     .footer-badges {
         display: flex;
-        gap: 20px;
+        gap: clamp(12px, 2.5vw, 24px);
         align-items: center;
-        margin-top: 1.6rem;
+        margin-top: clamp(1rem, 2.5vh, 2rem);
         flex-wrap: wrap;
     }
     .footer-badge {
@@ -224,7 +236,7 @@ st.markdown("""
         align-items: center;
         gap: 5px;
         color: #7a7458;
-        font-size: 0.74rem;
+        font-size: clamp(0.66rem, 1vw, 0.78rem);
     }
     .footer-badge svg {
         flex-shrink: 0;
@@ -234,26 +246,35 @@ st.markdown("""
     .section-divider {
         border: none;
         border-top: 1px solid #ddd8c4;
-        margin: 1.4rem 0 1rem 0;
+        margin: clamp(1rem, 2.5vh, 1.6rem) 0 clamp(0.8rem, 1.5vh, 1.2rem) 0;
     }
 
     /* ── Cards de resultado ── */
     .result-card {
         background: #faf7ef;
         border: 1.5px solid #d0c9b0;
-        border-radius: 12px;
-        padding: 1rem 1.2rem;
-        margin-bottom: 0.8rem;
+        border-radius: clamp(10px, 1.2vw, 14px);
+        padding: clamp(0.8rem, 1.5vh, 1.2rem) clamp(1rem, 2vw, 1.4rem);
+        margin-bottom: clamp(0.6rem, 1.2vh, 1rem);
     }
 
     /* ── Barra de progresso ── */
     [data-testid="stProgressBar"] > div > div {
         background-color: #c8b877 !important;
     }
-    
-    /* ── Formato de saída ── */
-    [data-testid="stRadio"] label {
-        font-size: 0.82rem !important;
+
+    /* ── Responsivo: telas muito pequenas (<480px) ── */
+    @media (max-width: 480px) {
+        .block-container {
+            padding-left: 0.8rem !important;
+            padding-right: 0.8rem !important;
+        }
+        .hero-title {
+            font-size: 1.5rem;
+        }
+        .pills-row {
+            gap: 5px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
