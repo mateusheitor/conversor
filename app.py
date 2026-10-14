@@ -1,6 +1,7 @@
 """
 Interface Web — Agente PDF → Excel
 Escritório de Contabilidade | Agno + Google Gemini
+Design Moderno, Confortável e Profissional
 """
 
 import json
@@ -16,336 +17,412 @@ load_dotenv()
 import streamlit as st
 
 # ── Injeta secrets do Streamlit Cloud no ambiente ──────────
-# Quando rodando no Streamlit Community Cloud, as chaves ficam
-# em st.secrets. Aqui as passamos para os.environ para que o
-# agente as encontre da mesma forma que no .env local.
 _SECRETS_KEYS = ["GOOGLE_API_KEY"]
 for _sk in _SECRETS_KEYS:
     try:
         if _sk in st.secrets and not os.environ.get(_sk):
             os.environ[_sk] = st.secrets[_sk]
     except Exception:
-        pass  # st.secrets pode não existir localmente
+        pass
 
 
 # ──────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
 # ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="PDF → Excel Inteligente",
-    page_icon="📄",
+    page_title="PDF → Excel Inteligente | Conversor Contábil",
+    page_icon="📊",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
-    /* ── Reset global ── */
+    /* ── Reset & Paleta de Cores Confortável ── */
+    :root {
+        --bg-main: #f8fafc;
+        --card-bg: #ffffff;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --primary-light: #eff6ff;
+        --border-color: #e2e8f0;
+        --border-hover: #cbd5e1;
+        --success-bg: #f0fdf4;
+        --success-text: #166534;
+        --success-border: #bbf7d0;
+    }
+
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        background-color: #f5f0e8 !important;
-        color: #1a1a0e !important;
+        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg-main) !important;
+        color: var(--text-primary) !important;
+        -webkit-font-smoothing: antialiased;
     }
 
-    /* Fundo geral da app */
     .stApp {
-        background-color: #f5f0e8 !important;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
     }
 
-    /* ── Container central responsivo ── */
-    /* Remove o padding lateral excessivo do layout wide */
+    /* ── Container Principal Centralizado e Polido ── */
     .block-container {
-        max-width: min(820px, 92vw) !important;
-        padding-left: clamp(1rem, 4vw, 3rem) !important;
-        padding-right: clamp(1rem, 4vw, 3rem) !important;
-        padding-top: clamp(1.5rem, 4vh, 3rem) !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        max-width: 860px !important;
+        padding-left: clamp(1.2rem, 3vw, 2.5rem) !important;
+        padding-right: clamp(1.2rem, 3vw, 2.5rem) !important;
+        padding-top: clamp(2rem, 4vh, 3.5rem) !important;
+        padding-bottom: clamp(3rem, 5vh, 5rem) !important;
+        margin: 0 auto !important;
     }
 
-    /* Esconde itens padrão do Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Oculta elementos padrão do Streamlit */
+    #MainMenu, footer, header {
+        visibility: hidden !important;
+        height: 0 !important;
+    }
 
-    /* ── Cabeçalho ── */
+    /* ── Badge de Destaque ── */
+    .hero-badge-wrap {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+    }
     .hero-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        background: #1a1a0e;
-        color: #c8b877;
-        font-size: clamp(0.6rem, 1.2vw, 0.75rem);
+        gap: 8px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1d4ed8;
+        font-size: 0.8125rem;
         font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: clamp(4px, 0.6vw, 6px) clamp(10px, 1.5vw, 14px);
-        border-radius: 20px;
-        margin-bottom: clamp(12px, 2vh, 20px);
+        letter-spacing: 0.02em;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.06);
     }
-    .hero-badge .dot {
-        width: clamp(6px, 0.8vw, 8px);
-        height: clamp(6px, 0.8vw, 8px);
-        background: #6bcb77;
+    .hero-badge .badge-dot {
+        width: 8px;
+        height: 8px;
+        background: #10b981;
         border-radius: 50%;
         display: inline-block;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
     }
 
+    /* ── Tipografia do Cabeçalho ── */
     .hero-title {
-        font-family: 'Playfair Display', serif;
-        font-size: clamp(1.8rem, 4vw, 3rem);
-        font-weight: 700;
-        line-height: 1.15;
-        color: #1a1a0e;
-        margin-bottom: clamp(0.4rem, 1vh, 0.8rem);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: clamp(2rem, 4.5vw, 2.85rem);
+        font-weight: 800;
+        line-height: 1.2;
+        color: #0f172a;
+        text-align: center;
+        margin-bottom: 0.85rem;
+        letter-spacing: -0.03em;
     }
-    .hero-title em {
-        font-style: italic;
-        color: #1a1a0e;
+    .gradient-text {
+        background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .hero-subtitle {
-        font-size: clamp(0.82rem, 1.5vw, 1rem);
-        color: #5a5642;
-        margin-bottom: clamp(1.4rem, 3vh, 2.5rem);
-        max-width: 90%;
+        font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+        color: #64748b;
+        text-align: center;
+        margin: 0 auto 2.5rem auto;
+        max-width: 620px;
         line-height: 1.6;
+        font-weight: 400;
     }
 
-    /* ── Seções ── */
-    .section-label {
-        font-size: clamp(0.58rem, 1vw, 0.68rem);
+    /* ── Cards de Etapas ── */
+    .step-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: clamp(1.2rem, 2.5vw, 1.75rem);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 6px 12px -2px rgba(15, 23, 42, 0.02);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .step-card:hover {
+        border-color: #cbd5e1;
+    }
+
+    .step-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 1.1rem;
+    }
+    .step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: #2563eb;
+        color: #ffffff;
+        font-size: 0.8125rem;
         font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #8a8068;
-        margin-bottom: clamp(6px, 1.2vh, 12px);
-        margin-top: clamp(4px, 0.8vh, 8px);
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+    }
+    .step-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+    }
+    .step-desc {
+        font-size: 0.84rem;
+        color: #64748b;
+        margin-left: auto;
     }
 
-    /* ── Upload box ── */
+    /* ── Upload Box Estilizada ── */
     [data-testid="stFileUploadDropzone"] {
-        border-radius: clamp(10px, 1.5vw, 16px) !important;
-        padding: clamp(1.2rem, 3vh, 2.5rem) clamp(1rem, 2vw, 2rem) !important;
-        background-color: #faf7ef !important;
-        border: 1.5px dashed #c8b877 !important;
-        transition: all 0.2s ease !important;
+        border-radius: 14px !important;
+        padding: 2.2rem 1.5rem !important;
+        background-color: #f8fafc !important;
+        border: 2px dashed #cbd5e1 !important;
+        transition: all 0.25s ease !important;
     }
     [data-testid="stFileUploadDropzone"]:hover {
-        border-color: #a0924a !important;
-        background-color: #f5f0e0 !important;
+        border-color: #3b82f6 !important;
+        background-color: #eff6ff !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08) !important;
     }
     [data-testid="stFileUploadDropzone"] p {
-        color: #5a5642 !important;
-        font-size: clamp(0.78rem, 1.3vw, 0.92rem) !important;
-    }
-    [data-testid="stFileUploadDropzone"] small {
-        color: #a09878 !important;
-        font-size: clamp(0.68rem, 1.1vw, 0.8rem) !important;
-    }
-
-    /* ── Pills de tipo ── */
-    .pills-row {
-        display: flex;
-        gap: clamp(6px, 1vw, 10px);
-        flex-wrap: wrap;
-        margin-top: clamp(8px, 1.2vh, 12px);
-        margin-bottom: 4px;
-    }
-    .pill {
-        background: #ede8d8;
-        color: #5a5642;
-        font-size: clamp(0.66rem, 1.1vw, 0.78rem);
-        font-weight: 500;
-        padding: clamp(3px, 0.5vh, 5px) clamp(10px, 1.5vw, 15px);
-        border-radius: 20px;
-        border: 1px solid #d0c9b0;
-        cursor: default;
-    }
-
-    /* ── Selectbox / inputs ── */
-    [data-testid="stSelectbox"] > div > div {
-        background-color: #1a1a0e !important;
-        color: #c8b877 !important;
-        border-radius: clamp(8px, 1vw, 12px) !important;
-        border: none !important;
-        font-weight: 600 !important;
-        font-size: clamp(0.78rem, 1.2vw, 0.92rem) !important;
-    }
-    [data-testid="stSelectbox"] svg {
-        fill: #c8b877 !important;
-    }
-
-    /* ── Textarea de campos ── */
-    [data-testid="stTextArea"] textarea {
-        background-color: #faf7ef !important;
-        border: 1.5px solid #d0c9b0 !important;
-        border-radius: clamp(8px, 1vw, 12px) !important;
-        color: #1a1a0e !important;
-        font-size: clamp(0.78rem, 1.2vw, 0.9rem) !important;
-        font-family: 'Inter', monospace !important;
-    }
-    [data-testid="stTextArea"] textarea:focus {
-        border-color: #c8b877 !important;
-        box-shadow: 0 0 0 2px rgba(200,184,119,0.18) !important;
-    }
-
-    /* ── Label dos widgets ── */
-    [data-testid="stWidgetLabel"] p,
-    label {
-        color: #3d3922 !important;
-        font-size: clamp(0.74rem, 1.1vw, 0.86rem) !important;
+        color: #334155 !important;
+        font-size: 0.95rem !important;
         font-weight: 500 !important;
     }
+    [data-testid="stFileUploadDropzone"] small {
+        color: #64748b !important;
+        font-size: 0.82rem !important;
+    }
 
-    /* ── Expander (Chave de API) ── */
+    /* ── Pills com visual clean ── */
+    .pills-container {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+    }
+    .pill-item {
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 0.775rem;
+        font-weight: 500;
+        padding: 5px 12px;
+        border-radius: 9999px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.15s ease;
+    }
+    .pill-item:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    /* ── Inputs e Selectboxes ── */
+    [data-testid="stSelectbox"] > div > div {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border-radius: 10px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        font-weight: 500 !important;
+        font-size: 0.9rem !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
+    }
+    [data-testid="stSelectbox"] > div > div:hover {
+        border-color: #cbd5e1 !important;
+    }
+    [data-testid="stSelectbox"] > div > div:focus-within {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+    [data-testid="stSelectbox"] svg {
+        fill: #64748b !important;
+    }
+
+    /* ── Textarea ── */
+    [data-testid="stTextArea"] textarea {
+        background-color: #ffffff !important;
+        border: 1.5px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        color: #0f172a !important;
+        font-size: 0.875rem !important;
+        font-family: 'Inter', monospace !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
+    }
+    [data-testid="stTextArea"] textarea:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    }
+
+    /* ── Expander ── */
     [data-testid="stExpander"] {
-        border: 1.5px solid #d0c9b0 !important;
-        border-radius: clamp(10px, 1.2vw, 14px) !important;
-        background-color: #faf7ef !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+        margin-top: 0.75rem !important;
     }
     [data-testid="stExpander"] summary {
-        color: #5a5642 !important;
-        font-size: clamp(0.76rem, 1.2vw, 0.88rem) !important;
+        color: #475569 !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
     }
     [data-testid="stTextInput"] input {
-        background-color: #faf7ef !important;
-        border: 1.5px solid #d0c9b0 !important;
+        background-color: #ffffff !important;
+        border: 1.5px solid #e2e8f0 !important;
         border-radius: 8px !important;
-        color: #1a1a0e !important;
-        font-size: clamp(0.78rem, 1.2vw, 0.9rem) !important;
+        color: #0f172a !important;
+        font-size: 0.875rem !important;
+    }
+    [data-testid="stTextInput"] input:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
     }
 
-    /* ── Botão primário ── */
+    /* ── Botão Primário Destacado ── */
     .stButton > button[kind="primary"],
     .stButton > button {
-        background-color: #1a1a0e !important;
-        color: #c8b877 !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: #ffffff !important;
         border: none !important;
-        border-radius: clamp(8px, 1vw, 12px) !important;
+        border-radius: 12px !important;
         font-weight: 600 !important;
-        font-size: clamp(0.82rem, 1.4vw, 0.98rem) !important;
-        padding: clamp(0.5rem, 1.2vh, 0.75rem) clamp(1rem, 2vw, 1.5rem) !important;
-        transition: all 0.2s ease !important;
-        letter-spacing: 0.02em;
+        font-size: 1.025rem !important;
+        padding: 0.85rem 1.75rem !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.35) !important;
+        cursor: pointer !important;
     }
     .stButton > button:hover {
-        background-color: #2e2d18 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(26,26,14,0.18) !important;
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 18px -2px rgba(37, 99, 235, 0.45) !important;
+    }
+    .stButton > button:active {
+        transform: translateY(0) !important;
     }
 
-    /* ── Rodapé segurança ── */
-    .footer-badges {
+    /* ── Badges de Confiança no Rodapé ── */
+    .trust-footer {
         display: flex;
-        gap: clamp(12px, 2.5vw, 24px);
+        justify-content: center;
+        gap: 24px;
         align-items: center;
-        margin-top: clamp(1rem, 2.5vh, 2rem);
+        margin-top: 2rem;
         flex-wrap: wrap;
     }
-    .footer-badge {
-        display: flex;
+    .trust-item {
+        display: inline-flex;
         align-items: center;
-        gap: 5px;
-        color: #7a7458;
-        font-size: clamp(0.66rem, 1vw, 0.78rem);
+        gap: 6px;
+        color: #64748b;
+        font-size: 0.8125rem;
+        font-weight: 500;
     }
-    .footer-badge svg {
-        flex-shrink: 0;
-    }
-
-    /* ── Separador de seção ── */
-    .section-divider {
-        border: none;
-        border-top: 1px solid #ddd8c4;
-        margin: clamp(1rem, 2.5vh, 1.6rem) 0 clamp(0.8rem, 1.5vh, 1.2rem) 0;
+    .trust-item svg {
+        color: #10b981;
     }
 
-    /* ── Cards de resultado ── */
-    .result-card {
-        background: #faf7ef;
-        border: 1.5px solid #d0c9b0;
-        border-radius: clamp(10px, 1.2vw, 14px);
-        padding: clamp(0.8rem, 1.5vh, 1.2rem) clamp(1rem, 2vw, 1.4rem);
-        margin-bottom: clamp(0.6rem, 1.2vh, 1rem);
-    }
-
-    /* ── Barra de progresso ── */
-    [data-testid="stProgressBar"] > div > div {
-        background-color: #c8b877 !important;
-    }
-
-    /* ── Responsivo: telas muito pequenas (<480px) ── */
-    @media (max-width: 480px) {
-        .block-container {
-            padding-left: 0.8rem !important;
-            padding-right: 0.8rem !important;
-        }
-        .hero-title {
-            font-size: 1.5rem;
-        }
-        .pills-row {
-            gap: 5px;
-        }
+    /* ── Card de Resultado ── */
+    .success-card {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────
-# CABEÇALHO
+# CABEÇALHO HERO
 # ──────────────────────────────────────────────
-st.markdown('<div class="hero-badge"><span class="dot"></span> IA ATIVA</div>', unsafe_allow_html=True)
-
 st.markdown("""
-<div class="hero-title">Transforme PDFs em<br><em>planilhas inteligentes</em></div>
+<div class="hero-badge-wrap">
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    <span>Inteligência Artificial Fiscal & Contábil</span>
+  </div>
+</div>
+<div class="hero-title">
+  Transforme PDFs em <span class="gradient-text">planilhas inteligentes</span>
+</div>
 <div class="hero-subtitle">
-  Faça o upload do documento e a IA lê, extrai e organiza os dados
-  automaticamente — pronto para o Excel.
+  Faça o upload dos seus documentos. O agente lê, estrutura e entrega dados prontos para análise no Excel com velocidade e alta precisão.
 </div>
 """, unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────
-# LÓGICA DE API KEY
+# LÓGICA DE API KEY E MODELOS
 # ──────────────────────────────────────────────
 from agent import MODELOS_GEMINI, MODELO_PADRAO, ENV_KEY, _carregar_api_key as _agent_carregar_key
 
 _api_key_default = _agent_carregar_key() or ""
 
+
 # ──────────────────────────────────────────────
-# SEÇÃO 1 — DOCUMENTO
+# ETAPA 1 — DOCUMENTOS
 # ──────────────────────────────────────────────
-st.markdown('<div class="section-label">1. Documento</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="step-card">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <span class="step-title">Upload de Documentos</span>
+    <span class="step-desc">Suporta múltiplos PDFs</span>
+  </div>
+""", unsafe_allow_html=True)
 
 arquivos_pdf = st.file_uploader(
     "Upload PDF",
     type=["pdf"],
     accept_multiple_files=True,
     label_visibility="collapsed",
+    help="Arraste e solte seus arquivos PDF ou clique para navegar.",
 )
 
-# Pills de tipo
 st.markdown("""
-<div class="pills-row">
-  <span class="pill">PDF</span>
-  <span class="pill">Nota fiscal</span>
-  <span class="pill">Contrato</span>
-  <span class="pill">Relatório</span>
-  <span class="pill">Fatura</span>
+  <div class="pills-container">
+    <span class="pill-item">📄 PDF Geral</span>
+    <span class="pill-item">🧾 Nota Fiscal (NF-e)</span>
+    <span class="pill-item">🏦 Boleto Bancário</span>
+    <span class="pill-item">📊 Extrato Bancário</span>
+    <span class="pill-item">📑 Balancete</span>
+    <span class="pill-item">👥 Folha de Pagamento</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────
-# SEÇÃO 2 — CONFIGURAÇÃO
+# ETAPA 2 — CONFIGURAÇÃO
 # ──────────────────────────────────────────────
-st.markdown('<div class="section-label">2. Configuração</div>', unsafe_allow_html=True)
+st.markdown("""
+<div class="step-card">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <span class="step-title">Configurações da Extração</span>
+    <span class="step-desc">Personalize o formato dos dados</span>
+  </div>
+""", unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 1], gap="medium")
 
 campos_preset = {
-    "🤖 Automático (IA detecta)": [],
+    "🤖 Automático (Detecção Inteligente)": [],
     "Nota Fiscal (NF-e)": ["numero_nf", "data_emissao", "emitente_cnpj", "emitente_nome",
                             "destinatario_cnpj", "valor_total", "valor_icms", "cfop"],
     "Boleto Bancário": ["beneficiario", "pagador", "valor", "vencimento", "nosso_numero", "banco"],
@@ -353,11 +430,11 @@ campos_preset = {
     "Balancete": ["conta", "descricao", "saldo_anterior", "debitos", "creditos", "saldo_atual"],
     "Folha de Pagamento": ["nome_funcionario", "cargo", "salario_base", "inss", "irrf", "valor_liquido"],
     "Recibo": ["pagador", "beneficiario", "valor", "descricao", "data"],
-    "Outro": [],
+    "Outro Documento": [],
 }
 
 with col1:
-    st.markdown("**Tipo de documento** ℹ️")
+    st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Tipo de documento</p>", unsafe_allow_html=True)
     tipo_doc = st.selectbox(
         "Tipo",
         list(campos_preset.keys()),
@@ -365,113 +442,116 @@ with col1:
     )
 
 with col2:
-    st.markdown("**Formato de saída** ℹ️")
+    st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Estrutura de saída</p>", unsafe_allow_html=True)
     formato_saida = st.selectbox(
         "Formato",
-        ["Uma linha por documento", "Uma linha por item", "Resumo consolidado"],
+        ["Uma linha por documento", "Uma linha por item/lançamento", "Resumo consolidado"],
         label_visibility="collapsed",
     )
 
 campos_sugeridos = campos_preset.get(tipo_doc, [])
 
-# Campos desejados
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown("**Campos desejados** &nbsp;<span style='font-size:0.74rem;color:#a09878'>opcional — deixe vazio para extração completa</span>", unsafe_allow_html=True)
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Campos desejados <span style='font-size:0.775rem; font-weight:400; color:#64748b;'>(opcional — deixe em branco para extrair tudo)</span></p>", unsafe_allow_html=True)
 
 campos_texto = st.text_area(
     "Campos",
-    value="\n".join(campos_sugeridos) if campos_sugeridos else "data_emissao\nvalor_total\ncnpj_emitente\nnome_destinatario",
-    height=130,
-    placeholder="Ex:\nnumero_nf\ndata_emissao\n\nDeixe em branco para extração automática.",
+    value="\n".join(campos_sugeridos) if campos_sugeridos else "numero_nf\ndata_emissao\nvalor_total\ncnpj_emitente\nnome_destinatario",
+    height=110,
+    placeholder="Ex:\nnumero_nf\ndata_emissao\nvalor_total\n\nDeixe em branco para extração completa.",
     label_visibility="collapsed",
 )
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ── Chave de API ──
-with st.expander("🔑  Chave de API & Modelo &nbsp;&nbsp;&nbsp;*Opcional*"):
+# Chave de API e Modelo em Expander discreto
+with st.expander("⚙️  Configurações Avançadas (Modelo & Chave de API)"):
     api_key = st.text_input(
         "Google API Key",
         type="password",
         value=_api_key_default,
-        placeholder=f"Chave Gemini  —  variável: {ENV_KEY}",
-        help="Configure 'GOOGLE_API_KEY' no .env ou informe aqui. Obtenha gratuitamente em aistudio.google.com",
-        label_visibility="visible",
+        placeholder=f"Chave Gemini  —  {ENV_KEY}",
+        help="A chave já vem pré-configurada se definida no .env. Obtenha gratuitamente em aistudio.google.com",
     )
     _modelo_selecionado = st.selectbox(
-        "Modelo",
+        "Modelo de IA",
         MODELOS_GEMINI,
         index=0,
-        help="Selecione o modelo Gemini a utilizar.",
+        help="gemini-flash-lite-latest é o mais rápido e estável. Inclui fallback automático.",
     )
 
+st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ── Botão principal ──
-st.markdown("<br>", unsafe_allow_html=True)
-processar = st.button("🚀  Iniciar extração", type="primary", use_container_width=True)
+# ──────────────────────────────────────────────
+# BOTÃO DE AÇÃO PRINCIPAL
+# ──────────────────────────────────────────────
+processar = st.button("🚀  Iniciar Extração para Excel", type="primary", use_container_width=True)
 
-# ── Rodapé de confiança ──
+# Rodapé de confiança e segurança
 st.markdown("""
-<div class="footer-badges">
-  <span class="footer-badge">
-    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7a7458" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0-1.657-1.343-3-3-3S6 9.343 6 11s1.343 3 3 3 3-1.343 3-3z"/>
-      <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657A8 8 0 116.343 5.343"/>
+<div class="trust-footer">
+  <span class="trust-item">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
     </svg>
-    Dados não são armazenados
+    Privacidade garantida (dados não retidos)
   </span>
-  <span class="footer-badge">
-    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7a7458" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+  <span class="trust-item">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
     </svg>
-    Processamento seguro
+    Alta velocidade com Gemini
   </span>
-  <span class="footer-badge">
-    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7a7458" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  <span class="trust-item">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
     </svg>
-    Resultado em segundos
+    Compatível com Microsoft Excel & Google Planilhas
   </span>
 </div>
 """, unsafe_allow_html=True)
 
+
 # ──────────────────────────────────────────────
-# PROCESSAMENTO
+# EXECUÇÃO DA EXTRAÇÃO
 # ──────────────────────────────────────────────
 if processar:
     if not api_key:
         st.error(
             f"❌ **GOOGLE_API_KEY** não encontrada. "
-            f"Configure `{ENV_KEY}` no `.env` ou informe acima."
+            f"Configure `{ENV_KEY}` no `.env` ou expanda a aba de configurações avançadas."
         )
-        st.info("💡 O Google Gemini é **gratuito**! Obtenha sua chave em [aistudio.google.com](https://aistudio.google.com).")
+        st.info("💡 Obtenha sua chave gratuita em [aistudio.google.com](https://aistudio.google.com).")
         st.stop()
 
     if not arquivos_pdf:
-        st.error("❌ Por favor, faça o upload de pelo menos um arquivo PDF antes de prosseguir.")
+        st.warning("⚠️ Faça o upload de pelo menos um arquivo PDF antes de iniciar.")
         st.stop()
 
-    # Define GOOGLE_API_KEY no ambiente para o agente
     os.environ[ENV_KEY] = api_key
 
     try:
         from agent import processar_pdf
     except ImportError as e:
-        st.error(f"❌ Erro interno: {e}")
+        st.error(f"❌ Erro ao carregar o motor de processamento: {e}")
         st.stop()
 
     campos_lista = [c.strip() for c in campos_texto.strip().split("\n") if c.strip()]
     resultados = []
 
-    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">3. Progresso</div>', unsafe_allow_html=True)
+    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">3</span>
+        <span class="step-title">Processamento em Tempo Real</span>
+      </div>
+    """, unsafe_allow_html=True)
 
     progress_bar = st.progress(0)
 
     for i, arquivo_pdf in enumerate(arquivos_pdf):
-        with st.status(f"Analisando: {arquivo_pdf.name}", expanded=True) as status:
-            st.write("📥 Carregando documento temporariamente...")
+        with st.status(f"Processando: {arquivo_pdf.name}", expanded=True) as status:
+            st.write("📥 Preparando arquivo...")
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
                 tmp_pdf.write(arquivo_pdf.read())
                 caminho_tmp = tmp_pdf.name
@@ -480,7 +560,7 @@ if processar:
             caminho_saida = os.path.join(tempfile.gettempdir(), f"excel_{uuid.uuid4().hex}.xlsx")
 
             try:
-                st.write("🤖 Google Gemini extraindo dados (pode levar alguns minutos)...")
+                st.write("🤖 IA extraindo e estruturando campos contábeis...")
                 resposta = processar_pdf(
                     caminho_pdf=caminho_tmp,
                     caminho_saida=caminho_saida,
@@ -489,20 +569,25 @@ if processar:
                     modelo=_modelo_selecionado,
                 )
 
-                st.write("📊 Gerando arquivo Excel...")
+                st.write("📊 Formatando planilha Excel...")
                 excel_data = None
                 if Path(caminho_saida).exists() and Path(caminho_saida).stat().st_size > 0:
                     with open(caminho_saida, "rb") as f:
                         excel_data = f.read()
 
+                sucesso = excel_data is not None
                 resultados.append({
                     "nome": arquivo_pdf.name,
                     "nome_saida": nome_saida,
                     "excel_data": excel_data,
                     "resposta": resposta,
-                    "sucesso": excel_data is not None,
+                    "sucesso": sucesso,
                 })
-                status.update(label=f"✅ Concluído: {arquivo_pdf.name}", state="complete", expanded=False)
+                status.update(
+                    label=f"✅ Concluído: {arquivo_pdf.name}",
+                    state="complete",
+                    expanded=False,
+                )
 
             except Exception as e:
                 resultados.append({
@@ -512,7 +597,11 @@ if processar:
                     "resposta": str(e),
                     "sucesso": False,
                 })
-                status.update(label=f"❌ Erro: {arquivo_pdf.name}", state="error", expanded=False)
+                status.update(
+                    label=f"❌ Erro ao analisar: {arquivo_pdf.name}",
+                    state="error",
+                    expanded=False,
+                )
 
             finally:
                 Path(caminho_tmp).unlink(missing_ok=True)
@@ -520,29 +609,47 @@ if processar:
 
         progress_bar.progress((i + 1) / len(arquivos_pdf))
 
-    # ──────────────────────────────────────────────
-    # RESULTADOS
-    # ──────────────────────────────────────────────
-    st.markdown('<hr class="section-divider">', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">4. Resultados e Download</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    for resultado in resultados:
+    # ──────────────────────────────────────────────
+    # EXIBIÇÃO DE RESULTADOS & DOWNLOAD
+    # ──────────────────────────────────────────────
+    st.markdown("""
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">4</span>
+        <span class="step-title">Arquivos Prontos para Download</span>
+      </div>
+    """, unsafe_allow_html=True)
+
+    for idx, resultado in enumerate(resultados):
         if resultado["sucesso"]:
             col_info, col_btn = st.columns([3, 1])
             with col_info:
-                st.success(f"📄 **{resultado['nome']}** formatado com sucesso!")
+                st.markdown(f"""
+                <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+                  <span style="font-size:1.5rem;">📊</span>
+                  <div>
+                    <div style="font-weight:700; color:#0f172a; font-size:0.95rem;">{resultado['nome_saida']}</div>
+                    <div style="color:#16a34a; font-size:0.8rem; font-weight:600;">✓ Extraído e formatado com sucesso</div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
             with col_btn:
                 st.download_button(
-                    label="⬇️ Baixar Excel",
+                    label="⬇️ Baixar Planilha",
                     data=resultado["excel_data"],
                     file_name=resultado["nome_saida"],
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
-                    key=f"dl_{resultado['nome']}",
+                    key=f"dl_{idx}_{resultado['nome']}",
                 )
-            with st.expander("🔍 Ver detalhes da extração"):
+            with st.expander("🔎 Ver detalhes e resumo da extração"):
                 st.markdown(resultado["resposta"])
+            st.markdown("<hr style='border:none; border-top:1px solid #f1f5f9; margin:12px 0;'>", unsafe_allow_html=True)
         else:
-            st.error(f"❌ Falha ao processar **{resultado['nome']}**")
-            with st.expander("Detalhes do erro"):
+            st.error(f"❌ Não foi possível extrair dados de: **{resultado['nome']}**")
+            with st.expander("Ver detalhes técnicos do erro"):
                 st.markdown(resultado["resposta"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
