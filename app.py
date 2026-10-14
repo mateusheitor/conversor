@@ -230,67 +230,132 @@ st.markdown("""
         color: #0f172a;
     }
 
-    /* ── Inputs e Selectboxes ── */
-    [data-testid="stSelectbox"] > div > div {
-        background-color: #ffffff !important;
+    /* ── Garante Contraste Total em Labels e Textos ── */
+    [data-testid="stWidgetLabel"],
+    [data-testid="stWidgetLabel"] *,
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] span,
+    [data-testid="stWidgetLabel"] label,
+    label,
+    label * {
         color: #0f172a !important;
-        border-radius: 10px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        font-weight: 500 !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-weight: 700 !important;
         font-size: 0.9rem !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
     }
-    [data-testid="stSelectbox"] > div > div:hover {
-        border-color: #cbd5e1 !important;
+
+    /* ── Texto Interno de Todos os Selectboxes (BaseWeb) ── */
+    [data-testid="stSelectbox"] div[data-baseweb="select"],
+    [data-testid="stSelectbox"] div[data-baseweb="select"] *,
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] *,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] p {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-weight: 600 !important;
+        font-size: 0.925rem !important;
     }
-    [data-testid="stSelectbox"] > div > div:focus-within {
+
+    /* Container dos Selectboxes */
+    [data-testid="stSelectbox"] > div > div,
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    }
+    [data-testid="stSelectbox"] > div > div:hover,
+    div[data-baseweb="select"] > div:hover {
+        border-color: #94a3b8 !important;
+    }
+    [data-testid="stSelectbox"] > div > div:focus-within,
+    div[data-baseweb="select"] > div:focus-within {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
     }
     [data-testid="stSelectbox"] svg {
-        fill: #64748b !important;
+        fill: #334155 !important;
+    }
+
+    /* Dropdown do Selectbox */
+    ul[data-baseweb="menu"],
+    ul[data-baseweb="menu"] li,
+    ul[data-baseweb="menu"] * {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-weight: 500 !important;
+    }
+    ul[data-baseweb="menu"] li:hover,
+    ul[data-baseweb="menu"] li:hover * {
+        background-color: #eff6ff !important;
+        color: #1d4ed8 !important;
+        -webkit-text-fill-color: #1d4ed8 !important;
     }
 
     /* ── Textarea ── */
     [data-testid="stTextArea"] textarea {
         background-color: #ffffff !important;
-        border: 1.5px solid #e2e8f0 !important;
+        border: 1.5px solid #cbd5e1 !important;
         border-radius: 10px !important;
         color: #0f172a !important;
-        font-size: 0.875rem !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
         font-family: 'Inter', monospace !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
     }
     [data-testid="stTextArea"] textarea:focus {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
     }
 
-    /* ── Expander ── */
+    /* ── Expander Totalmente Confortável e Nítido ── */
     [data-testid="stExpander"] {
-        border: 1px solid #e2e8f0 !important;
+        border: 1.5px solid #cbd5e1 !important;
         border-radius: 12px !important;
         background-color: #ffffff !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
-        margin-top: 0.75rem !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+        margin-top: 1rem !important;
+        overflow: hidden !important;
     }
     [data-testid="stExpander"] summary {
-        color: #475569 !important;
-        font-size: 0.875rem !important;
-        font-weight: 600 !important;
+        background-color: #f1f5f9 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 0.85rem 1.15rem !important;
     }
-    [data-testid="stTextInput"] input {
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary * {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
         background-color: #ffffff !important;
-        border: 1.5px solid #e2e8f0 !important;
+        padding: 1.25rem !important;
+    }
+
+    /* ── Inputs de Texto (API Key) ── */
+    [data-testid="stTextInput"] input,
+    input[type="text"],
+    input[type="password"] {
+        background-color: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
         border-radius: 8px !important;
         color: #0f172a !important;
-        font-size: 0.875rem !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
     }
     [data-testid="stTextInput"] input:focus {
         border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    }
+    [data-testid="stTextInput"] svg {
+        fill: #334155 !important;
     }
 
     /* ── Botão Primário Destacado ── */
