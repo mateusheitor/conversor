@@ -8,10 +8,15 @@ Powered by **Agno + Google Gemini** (gratuito).
 
 ## ✨ Funcionalidades
 
-- Upload de múltiplos PDFs
-- Detecção automática do tipo de documento (NF-e, boleto, extrato, folha de pagamento, etc.)
-- Extração inteligente de dados com LLM
-- Exportação para Excel formatado profissionalmente
+- Upload de múltiplos PDFs simultâneos
+- Detecção automática do tipo de documento (NF-e, boleto, extrato, balancete, folha de pagamento, etc.)
+- Extração inteligente de dados com LLM Google Gemini
+- **Múltiplos Formatos de Saída Contábil (Compatíveis com Alterdata):**
+  - **📁 TXT Layout Alterdata (.txt):** Delimitado por ponto e vírgula, pronto para o Alterdata Pack / WCont
+  - **📑 Planilha Alterdata (.xlsm):** Modelo de Importação Personalizada com estrutura de lançamentos
+  - **📊 Excel Analítico (.xlsx):** Planilha detalhada com todos os dados brutos extraídos
+  - **📄 Espelho de Conferência (.pdf):** Relatório executivo para auditoria contábil e conferência física/digital
+  - **📦 Pacote Completo (.zip):** Download de todos os formatos gerados em um clique
 - Provedor de IA: **Google Gemini** (`gemini-flash-lite-latest`, `gemini-3.8-flash`) — gratuito via Google AI Studio
 
 ---

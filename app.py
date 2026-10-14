@@ -527,6 +527,26 @@ campos_texto = st.text_area(
     label_visibility="collapsed",
 )
 
+# Formatos de exportação desejados
+st.markdown("<p style='font-weight:700; font-size:0.9rem; margin-top:14px; margin-bottom:6px; color:#0f172a;'>Formatos de exportação compatíveis</p>", unsafe_allow_html=True)
+formatos_selecionados = st.multiselect(
+    "Formatos de exportação",
+    options=[
+        "📊 Excel Analítico (.xlsx)",
+        "📁 TXT Layout Alterdata (.txt)",
+        "📑 Planilha Alterdata (.xlsm)",
+        "📄 Espelho de Conferência (.pdf)",
+    ],
+    default=[
+        "📊 Excel Analítico (.xlsx)",
+        "📁 TXT Layout Alterdata (.txt)",
+        "📑 Planilha Alterdata (.xlsm)",
+        "📄 Espelho de Conferência (.pdf)",
+    ],
+    label_visibility="collapsed",
+    help="Selecione os arquivos que deseja gerar. O sistema prepara todos automaticamente para o Alterdata e Excel.",
+)
+
 # Chave de API e Modelo em Expander discreto
 with st.expander("⚙️  Configurações Avançadas (Modelo & Chave de API)"):
     api_key = st.text_input(
@@ -549,7 +569,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ──────────────────────────────────────────────
 # BOTÃO DE AÇÃO PRINCIPAL
 # ──────────────────────────────────────────────
-processar = st.button("🚀  Iniciar Extração para Excel", type="primary", use_container_width=True)
+processar = st.button("🚀  Iniciar Extração e Conversão", type="primary", use_container_width=True)
 
 # Rodapé de confiança e segurança
 st.markdown("""
@@ -558,7 +578,7 @@ st.markdown("""
     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
     </svg>
-    Privacidade garantida (dados não retidos)
+    Compatível com Alterdata Pack & WCont
   </span>
   <span class="trust-item">
     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -570,7 +590,7 @@ st.markdown("""
     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
     </svg>
-    Compatível com Microsoft Excel & Google Planilhas
+    Exporta .xlsx, .txt, .xlsm e .pdf
   </span>
 </div>
 """, unsafe_allow_html=True)
@@ -608,24 +628,33 @@ if processar:
     <div class="step-card">
       <div class="step-header">
         <span class="step-num">3</span>
-        <span class="step-title">Processamento em Tempo Real</span>
+        <span class="step-title">Processamento e Conversão em Tempo Real</span>
       </div>
     """, unsafe_allow_html=True)
 
     progress_bar = st.progress(0)
 
+    import io
+    import re
+    import zipfile
+
     for i, arquivo_pdf in enumerate(arquivos_pdf):
         with st.status(f"Processando: {arquivo_pdf.name}", expanded=True) as status:
-            st.write("📥 Preparando arquivo...")
+            st.write("📥 Preparando documento...")
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
                 tmp_pdf.write(arquivo_pdf.read())
                 caminho_tmp = tmp_pdf.name
 
             nome_saida = arquivo_pdf.name.replace(".pdf", "_extraido.xlsx")
             caminho_saida = os.path.join(tempfile.gettempdir(), f"excel_{uuid.uuid4().hex}.xlsx")
+            caminho_base = re.sub(r"\.xlsx$", "", caminho_saida, flags=re.IGNORECASE)
+
+            txt_path = f"{caminho_base}.txt"
+            xlsm_path = f"{caminho_base}.xlsm"
+            pdf_path = f"{caminho_base}.pdf"
 
             try:
-                st.write("🤖 IA extraindo e estruturando campos contábeis...")
+                st.write("🤖 IA extraindo dados e formatando para Alterdata...")
                 resposta = processar_pdf(
                     caminho_pdf=caminho_tmp,
                     caminho_saida=caminho_saida,
@@ -634,22 +663,56 @@ if processar:
                     modelo=_modelo_selecionado,
                 )
 
-                st.write("📊 Formatando planilha Excel...")
+                st.write("📊 Gerando arquivos (.xlsx, .txt Alterdata, .xlsm, .pdf)...")
                 excel_data = None
+                txt_data = None
+                xlsm_data = None
+                pdf_data = None
+                zip_data = None
+
                 if Path(caminho_saida).exists() and Path(caminho_saida).stat().st_size > 0:
                     with open(caminho_saida, "rb") as f:
                         excel_data = f.read()
+
+                if Path(txt_path).exists() and Path(txt_path).stat().st_size > 0:
+                    with open(txt_path, "rb") as f:
+                        txt_data = f.read()
+
+                if Path(xlsm_path).exists() and Path(xlsm_path).stat().st_size > 0:
+                    with open(xlsm_path, "rb") as f:
+                        xlsm_data = f.read()
+
+                if Path(pdf_path).exists() and Path(pdf_path).stat().st_size > 0:
+                    with open(pdf_path, "rb") as f:
+                        pdf_data = f.read()
+
+                # Gera arquivo ZIP consolidado
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                    if excel_data:
+                        zf.writestr(nome_saida, excel_data)
+                    if txt_data:
+                        zf.writestr(nome_saida.replace(".xlsx", "_alterdata.txt"), txt_data)
+                    if xlsm_data:
+                        zf.writestr(nome_saida.replace(".xlsx", "_alterdata.xlsm"), xlsm_data)
+                    if pdf_data:
+                        zf.writestr(nome_saida.replace(".xlsx", "_espelho.pdf"), pdf_data)
+                zip_data = zip_buffer.getvalue()
 
                 sucesso = excel_data is not None
                 resultados.append({
                     "nome": arquivo_pdf.name,
                     "nome_saida": nome_saida,
                     "excel_data": excel_data,
+                    "txt_data": txt_data,
+                    "xlsm_data": xlsm_data,
+                    "pdf_data": pdf_data,
+                    "zip_data": zip_data,
                     "resposta": resposta,
                     "sucesso": sucesso,
                 })
                 status.update(
-                    label=f"✅ Concluído: {arquivo_pdf.name}",
+                    label=f"✅ Concluído: {arquivo_pdf.name} (Arquivos Alterdata gerados)",
                     state="complete",
                     expanded=False,
                 )
@@ -659,6 +722,10 @@ if processar:
                     "nome": arquivo_pdf.name,
                     "nome_saida": nome_saida,
                     "excel_data": None,
+                    "txt_data": None,
+                    "xlsm_data": None,
+                    "pdf_data": None,
+                    "zip_data": None,
                     "resposta": str(e),
                     "sucesso": False,
                 })
@@ -671,6 +738,9 @@ if processar:
             finally:
                 Path(caminho_tmp).unlink(missing_ok=True)
                 Path(caminho_saida).unlink(missing_ok=True)
+                Path(txt_path).unlink(missing_ok=True)
+                Path(xlsm_path).unlink(missing_ok=True)
+                Path(pdf_path).unlink(missing_ok=True)
 
         progress_bar.progress((i + 1) / len(arquivos_pdf))
 
@@ -684,34 +754,101 @@ if processar:
       <div class="step-header">
         <span class="step-num">4</span>
         <span class="step-title">Arquivos Prontos para Download</span>
+        <span class="step-desc">Selecione o formato desejado</span>
       </div>
     """, unsafe_allow_html=True)
 
     for idx, resultado in enumerate(resultados):
         if resultado["sucesso"]:
-            col_info, col_btn = st.columns([3, 1])
-            with col_info:
-                st.markdown(f"""
-                <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
-                  <span style="font-size:1.5rem;">📊</span>
-                  <div>
-                    <div style="font-weight:700; color:#0f172a; font-size:0.95rem;">{resultado['nome_saida']}</div>
-                    <div style="color:#16a34a; font-size:0.8rem; font-weight:600;">✓ Extraído e formatado com sucesso</div>
-                  </div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_btn:
-                st.download_button(
-                    label="⬇️ Baixar Planilha",
-                    data=resultado["excel_data"],
-                    file_name=resultado["nome_saida"],
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
-                    key=f"dl_{idx}_{resultado['nome']}",
-                )
+            nome_base = resultado["nome_saida"].replace(".xlsx", "")
+
+            st.markdown(f"""
+            <div style="display:flex; align-items:center; gap:10px; margin-top:8px; margin-bottom:12px;">
+              <span style="font-size:1.6rem;">📄</span>
+              <div>
+                <div style="font-weight:700; color:#0f172a; font-size:1rem;">{resultado['nome']}</div>
+                <div style="color:#16a34a; font-size:0.8125rem; font-weight:600;">✓ Extraído e convertido com sucesso para os formatos Alterdata</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Botões organizados por colunas
+            cols = st.columns(len(formatos_selecionados) + (1 if len(formatos_selecionados) > 1 else 0))
+            col_curr = 0
+
+            # 1. Excel Analítico
+            if "📊 Excel Analítico (.xlsx)" in formatos_selecionados and resultado["excel_data"]:
+                with cols[col_curr]:
+                    st.download_button(
+                        label="📊 Baixar .xlsx",
+                        data=resultado["excel_data"],
+                        file_name=f"{nome_base}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True,
+                        key=f"dl_xlsx_{idx}_{resultado['nome']}",
+                        help="Planilha Excel completa com todos os campos extraídos.",
+                    )
+                col_curr += 1
+
+            # 2. TXT Layout Alterdata
+            if "📁 TXT Layout Alterdata (.txt)" in formatos_selecionados and resultado["txt_data"]:
+                with cols[col_curr]:
+                    st.download_button(
+                        label="📁 Baixar .txt",
+                        data=resultado["txt_data"],
+                        file_name=f"{nome_base}_alterdata.txt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        key=f"dl_txt_{idx}_{resultado['nome']}",
+                        help="Arquivo de texto delimitado por ';' pronto para importação direta no Alterdata Pack / WCont.",
+                    )
+                col_curr += 1
+
+            # 3. Planilha Alterdata .xlsm
+            if "📑 Planilha Alterdata (.xlsm)" in formatos_selecionados and resultado["xlsm_data"]:
+                with cols[col_curr]:
+                    st.download_button(
+                        label="📑 Baixar .xlsm",
+                        data=resultado["xlsm_data"],
+                        file_name=f"{nome_base}_alterdata.xlsm",
+                        mime="application/vnd.ms-excel.sheet.macroEnabled.12",
+                        use_container_width=True,
+                        key=f"dl_xlsm_{idx}_{resultado['nome']}",
+                        help="Planilha no modelo de Importação Personalizada do Alterdata Contábil.",
+                    )
+                col_curr += 1
+
+            # 4. Espelho de Conferência .pdf
+            if "📄 Espelho de Conferência (.pdf)" in formatos_selecionados and resultado["pdf_data"]:
+                with cols[col_curr]:
+                    st.download_button(
+                        label="📄 Baixar .pdf",
+                        data=resultado["pdf_data"],
+                        file_name=f"{nome_base}_espelho.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=f"dl_pdf_{idx}_{resultado['nome']}",
+                        help="Relatório executivo em PDF para auditoria contábil e conferência pré-importação.",
+                    )
+                col_curr += 1
+
+            # 5. Pacote ZIP Completo
+            if len(formatos_selecionados) > 1 and resultado["zip_data"]:
+                with cols[col_curr]:
+                    st.download_button(
+                        label="📦 Baixar .zip",
+                        data=resultado["zip_data"],
+                        file_name=f"{nome_base}_pacote_completo.zip",
+                        mime="application/zip",
+                        use_container_width=True,
+                        key=f"dl_zip_{idx}_{resultado['nome']}",
+                        help="Baixa todos os formatos gerados em um único arquivo compactado.",
+                    )
+
             with st.expander("🔎 Ver detalhes e resumo da extração"):
                 st.markdown(resultado["resposta"])
-            st.markdown("<hr style='border:none; border-top:1px solid #f1f5f9; margin:12px 0;'>", unsafe_allow_html=True)
+
+            st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:16px 0;'>", unsafe_allow_html=True)
         else:
             st.error(f"❌ Não foi possível extrair dados de: **{resultado['nome']}**")
             with st.expander("Ver detalhes técnicos do erro"):

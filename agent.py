@@ -160,16 +160,276 @@ def identificar_tipo_documento(texto_pdf: str) -> str:
     }, ensure_ascii=False)
 
 
+def normalizar_dados_alterdata(dados: list[dict]) -> list[dict]:
+    """
+    Normaliza os dados extraídos para a estrutura aceita pelo Alterdata Contábil:
+    - Data (DD/MM/AAAA)
+    - Conta Débito
+    - Conta Crédito
+    - Valor (numérico)
+    - Código de Histórico
+    - Histórico Complementar
+    - Documento (Número NF, Boleto, etc.)
+    - Centro de Custo
+    """
+    dados_alterdata = []
+    for r in dados:
+        # Extrai data
+        data = (
+            r.get("data")
+            or r.get("data_emissao")
+            or r.get("data_lancamento")
+            or r.get("vencimento")
+            or ""
+        )
+        data = str(data).strip()
+        m_data = re.search(r"(\d{2})[/\-\.](\d{2})[/\-\.](\d{4})", data)
+        if m_data:
+            data = f"{m_data.group(1)}/{m_data.group(2)}/{m_data.group(3)}"
+
+        # Extrai valor
+        val_raw = (
+            r.get("valor")
+            or r.get("valor_total")
+            or r.get("valor_liquido")
+            or r.get("saldo")
+            or "0"
+        )
+        val_limpo = re.sub(r"[R$\s]", "", str(val_raw)).replace(".", "").replace(",", ".")
+        try:
+            valor = float(val_limpo)
+        except ValueError:
+            try:
+                valor = float(str(val_raw).replace(",", "."))
+            except ValueError:
+                valor = 0.0
+
+        # Extrai documento
+        doc = (
+            r.get("numero_nf")
+            or r.get("numero")
+            or r.get("nosso_numero")
+            or r.get("documento")
+            or ""
+        )
+
+        # Extrai histórico / descrição
+        historico = (
+            r.get("descricao")
+            or r.get("emitente_nome")
+            or r.get("beneficiario")
+            or r.get("pagador")
+            or r.get("historico")
+            or "LANCAMENTO AUTOMATICO VIA IA"
+        )
+
+        debito = str(r.get("conta_debito") or r.get("debito") or "").strip()
+        credito = str(r.get("conta_credito") or r.get("credito") or "").strip()
+        cod_hist = str(r.get("cod_historico") or r.get("codigo_historico") or "1").strip()
+        centro_custo = str(r.get("centro_custo") or "").strip()
+
+        dados_alterdata.append({
+            "Data": data,
+            "Conta_Debito": debito,
+            "Conta_Credito": credito,
+            "Valor": valor,
+            "Cod_Historico": cod_hist,
+            "Historico_Complementar": str(historico).upper()[:200],
+            "Documento": str(doc).strip(),
+            "Centro_Custo": centro_custo,
+        })
+    return dados_alterdata
+
+
+def gerar_txt_alterdata(dados_alterdata: list[dict], caminho_saida: str) -> str:
+    """
+    Gera o arquivo TXT no layout padrão do Alterdata Pack / WCont:
+    Layout delimitado por ponto e vírgula:
+    DATA;CONTA_DEBITO;CONTA_CREDITO;VALOR;COD_HISTORICO;COMPLEMENTO;DOCUMENTO;CENTRO_CUSTO
+    """
+    linhas = ["DATA;DEBITO;CREDITO;VALOR;HISTORICO;COMPLEMENTO;DOCUMENTO;CENTRO_CUSTO"]
+    for d in dados_alterdata:
+        val_str = f"{d['Valor']:.2f}".replace(".", ",")
+        linha = (
+            f"{d['Data']};"
+            f"{d['Conta_Debito']};"
+            f"{d['Conta_Credito']};"
+            f"{val_str};"
+            f"{d['Cod_Historico']};"
+            f"{d['Historico_Complementar']};"
+            f"{d['Documento']};"
+            f"{d['Centro_Custo']}"
+        )
+        linhas.append(linha)
+
+    Path(caminho_saida).parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho_saida, "w", encoding="latin-1", errors="replace") as f:
+        f.write("\r\n".join(linhas) + "\r\n")
+    return caminho_saida
+
+
+def gerar_xlsm_alterdata(dados_alterdata: list[dict], caminho_saida: str) -> str:
+    """
+    Gera a planilha no formato XLSM (modelo de Importação Personalizada Alterdata).
+    """
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Importacao Alterdata"
+
+    headers = [
+        "Data", "Conta Débito", "Conta Crédito", "Valor",
+        "Cód. Histórico", "Histórico Complementar", "Documento", "Centro de Custo"
+    ]
+
+    fonte_cabecalho = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+    fill_cabecalho = PatternFill("solid", fgColor="1B365D")  # Azul Corporativo Alterdata
+    alinhamento_centro = Alignment(horizontal="center", vertical="center")
+    alinhamento_esquerda = Alignment(horizontal="left", vertical="center")
+    borda = Border(
+        left=Side(style="thin", color="CCCCCC"),
+        right=Side(style="thin", color="CCCCCC"),
+        top=Side(style="thin", color="CCCCCC"),
+        bottom=Side(style="thin", color="CCCCCC"),
+    )
+
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=h)
+        cell.font = fonte_cabecalho
+        cell.fill = fill_cabecalho
+        cell.alignment = alinhamento_centro
+        cell.border = borda
+    ws.row_dimensions[1].height = 26
+
+    for r_idx, d in enumerate(dados_alterdata, 2):
+        row_vals = [
+            d["Data"], d["Conta_Debito"], d["Conta_Credito"], d["Valor"],
+            d["Cod_Historico"], d["Historico_Complementar"], d["Documento"], d["Centro_Custo"]
+        ]
+        for col_idx, val in enumerate(row_vals, 1):
+            cell = ws.cell(row=r_idx, column=col_idx, value=val)
+            cell.border = borda
+            if col_idx == 4:
+                cell.number_format = "#,##0.00"
+                cell.alignment = Alignment(horizontal="right", vertical="center")
+            else:
+                cell.alignment = alinhamento_esquerda
+        ws.row_dimensions[r_idx].height = 20
+
+    for col_idx, h in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = max(len(h) + 4, 16)
+
+    Path(caminho_saida).parent.mkdir(parents=True, exist_ok=True)
+    wb.save(caminho_saida)
+    return caminho_saida
+
+
+def gerar_pdf_relatorio(dados: list[dict], caminho_saida: str, titulo: str = "Espelho de Conferência Contábil") -> str:
+    """
+    Gera um relatório executivo em PDF com o espelho contábil para conferência e auditoria.
+    """
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from datetime import datetime
+
+    Path(caminho_saida).parent.mkdir(parents=True, exist_ok=True)
+    doc = SimpleDocTemplate(
+        caminho_saida,
+        pagesize=landscape(A4),
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=25,
+        bottomMargin=25,
+    )
+    styles = getSampleStyleSheet()
+
+    estilo_titulo = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=15,
+        leading=18,
+        textColor=colors.HexColor('#0f172a'),
+    )
+    estilo_sub = ParagraphStyle(
+        'DocSub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8.5,
+        leading=11,
+        textColor=colors.HexColor('#64748b'),
+    )
+
+    data_atual = datetime.now().strftime("%d/%m/%Y às %H:%M")
+    story = [
+        Paragraph(f"<b>{titulo.upper()}</b>", estilo_titulo),
+        Paragraph(f"Documento processado por Inteligência Artificial Contábil • Gerado em: {data_atual}", estilo_sub),
+        Spacer(1, 12),
+    ]
+
+    if not dados:
+        doc.build(story)
+        return caminho_saida
+
+    colunas = list(dados[0].keys())[:6]
+    cabecalhos = [c.replace("_", " ").title() for c in colunas]
+    linhas_tabela = [cabecalhos]
+
+    total_valor = 0.0
+    for d in dados:
+        linha = []
+        for c in colunas:
+            v = d.get(c, "")
+            if "valor" in c.lower() or "saldo" in c.lower():
+                try:
+                    val_float = float(re.sub(r"[R$\s]", "", str(v)).replace(".", "").replace(",", "."))
+                    total_valor += val_float
+                    v = f"R$ {val_float:,.2f}"
+                except Exception:
+                    pass
+            linha.append(str(v)[:40])
+        linhas_tabela.append(linha)
+
+    t = Table(linhas_tabela, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+    ]))
+    story.append(t)
+
+    story.append(Spacer(1, 12))
+    resumo_texto = f"<b>Total de Registros:</b> {len(dados)}"
+    if total_valor > 0:
+        resumo_texto += f" &nbsp;&nbsp;|&nbsp;&nbsp; <b>Valor Consolidado:</b> R$ {total_valor:,.2f}"
+    story.append(Paragraph(resumo_texto, styles['Normal']))
+
+    story.append(Spacer(1, 16))
+    story.append(Paragraph("____________________________________________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ____________________________________________", styles['Normal']))
+    story.append(Paragraph("Conferido por (Responsável Contábil) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Aprovado para Importação no Alterdata", estilo_sub))
+
+    doc.build(story)
+    return caminho_saida
+
+
 @tool
 def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Dados Extraídos") -> str:
     """
-    Salva os dados extraídos em um arquivo Excel formatado profissionalmente.
-    dados_json deve ser uma lista de dicionários JSON.
+    Salva os dados extraídos em Excel (.xlsx) e gera simultaneamente as versões compatíveis
+    com o sistema Alterdata (.txt, .xlsm) e o espelho de conferência (.pdf).
     """
     try:
         dados = json.loads(dados_json)
     except json.JSONDecodeError as e:
-        # Tenta extrair JSON de um bloco de código markdown que o LLM pode ter gerado
         match = re.search(r"```(?:json)?\s*([\s\S]+?)```", dados_json)
         if match:
             try:
@@ -182,11 +442,9 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
     if not dados:
         return "ERRO: Nenhum dado para salvar."
 
-    # Garante que é lista
     if isinstance(dados, dict):
         dados = [dados]
 
-    # Filtra apenas dicionários válidos
     dados = [d for d in dados if isinstance(d, dict)]
     if not dados:
         return "ERRO: Nenhum registro dicionário válido encontrado."
@@ -194,7 +452,7 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
     try:
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = titulo_planilha[:31]  # Excel limita a 31 chars
+        ws.title = titulo_planilha[:31]
 
         # Estilos
         cor_cabecalho = "1F4E79"
@@ -233,7 +491,6 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
         for linha_idx, registro in enumerate(dados, 3):
             for col_idx, coluna in enumerate(colunas, 1):
                 valor = registro.get(coluna, "")
-                # Converte None para string vazia
                 if valor is None:
                     valor = ""
                 celula = ws.cell(row=linha_idx, column=col_idx, value=valor)
@@ -241,13 +498,12 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
                 celula.border = borda
                 celula.alignment = alinhamento_esquerda
 
-                # Linhas alternadas
                 if linha_idx % 2 == 0:
                     celula.fill = PatternFill("solid", fgColor=cor_linha_par)
 
             ws.row_dimensions[linha_idx].height = 18
 
-        # Ajusta largura das colunas automaticamente
+        # Ajusta largura das colunas
         for col_idx, coluna in enumerate(colunas, 1):
             max_largura = len(coluna) + 4
             for linha_idx in range(3, len(dados) + 3):
@@ -256,10 +512,9 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
                     max_largura = max(max_largura, min(len(str(valor)) + 2, 50))
             ws.column_dimensions[get_column_letter(col_idx)].width = max_largura
 
-        # Congela cabeçalhos
         ws.freeze_panes = "A3"
 
-        # Adiciona linha de total se houver campos numéricos
+        # Linha de total
         ultima_linha = len(dados) + 3
         tem_total = False
         for col_idx, coluna in enumerate(colunas, 1):
@@ -293,10 +548,31 @@ def salvar_excel(dados_json: str, caminho_saida: str, titulo_planilha: str = "Da
 
         Path(caminho_saida).parent.mkdir(parents=True, exist_ok=True)
         wb.save(caminho_saida)
-        return f"✅ Excel salvo com sucesso: {caminho_saida} ({len(dados)} registros, {len(colunas)} colunas)"
+
+        # ── Gera automaticamente os formatos adicionais Alterdata e PDF ──
+        caminho_base = re.sub(r"\.xlsx$", "", caminho_saida, flags=re.IGNORECASE)
+        dados_alterdata = normalizar_dados_alterdata(dados)
+
+        txt_path = f"{caminho_base}.txt"
+        gerar_txt_alterdata(dados_alterdata, txt_path)
+
+        xlsm_path = f"{caminho_base}.xlsm"
+        gerar_xlsm_alterdata(dados_alterdata, xlsm_path)
+
+        pdf_path = f"{caminho_base}.pdf"
+        gerar_pdf_relatorio(dados, pdf_path, titulo=f"Espelho Contábil — {titulo_planilha}")
+
+        return (
+            f"✅ Arquivos gerados com sucesso:\n"
+            f"- 📊 Excel Analítico (.xlsx): `{caminho_saida}`\n"
+            f"- 📁 TXT Layout Alterdata (.txt): `{txt_path}`\n"
+            f"- 📑 Planilha Alterdata (.xlsm): `{xlsm_path}`\n"
+            f"- 📄 Espelho de Conferência (.pdf): `{pdf_path}`\n"
+            f"({len(dados)} registros processados)"
+        )
 
     except Exception as e:
-        return f"ERRO ao salvar Excel: {e}"
+        return f"ERRO ao salvar arquivos: {e}"
 
 
 # ──────────────────────────────────────────────
