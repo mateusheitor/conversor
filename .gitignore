@@ -1,0 +1,19 @@
+# Segredos e chaves
+.env
+api.txt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Dados e outputs temporários
+*.xlsx
+*.pdf
+tmp/
+
+# IDEs
+.DS_Store
+.vscode/
+.idea/
