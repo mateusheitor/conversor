@@ -12,7 +12,7 @@ Powered by **Agno + Google Gemini** (gratuito).
 - Detecção automática do tipo de documento (NF-e, boleto, extrato, balancete, folha de pagamento, etc.)
 - Extração inteligente de dados com LLM Google Gemini
 - **Múltiplos Formatos de Saída Contábil (Compatíveis com Alterdata):**
-  - **📁 TXT Layout Alterdata (.txt):** Delimitado por ponto e vírgula, pronto para o Alterdata Pack / WCont
+  - **📁 TXT Layout Contábil (.txt):** Arquivo delimitado por vírgulas e aspas duplas (`"","DEBITO","CREDITO","DATA","VALOR","","HISTORICO",""`), pronto para importação contábil direta.
   - **📑 Planilha Alterdata (.xlsm):** Modelo de Importação Personalizada com estrutura de lançamentos
   - **📊 Excel Analítico (.xlsx):** Planilha detalhada com todos os dados brutos extraídos
   - **📄 Espelho de Conferência (.pdf):** Relatório executivo para auditoria contábil e conferência física/digital

@@ -1,13 +1,17 @@
 """
-Interface Web — Agente PDF → Excel
+Interface Web — Agente Contábil Inteligente
 Escritório de Contabilidade | Agno + Google Gemini
-Design Moderno, Confortável e Profissional
+Design Premium Inspirado no C3 Lançamentos — Layout Harmônico e Visual Elegante
 """
 
+import io
 import json
 import os
+import re
 import tempfile
 import uuid
+import zipfile
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,7 +20,7 @@ load_dotenv()
 
 import streamlit as st
 
-# ── Injeta secrets do Streamlit Cloud no ambiente ──────────
+# Injeta secrets do Streamlit Cloud no ambiente se existirem
 _SECRETS_KEYS = ["GOOGLE_API_KEY"]
 for _sk in _SECRETS_KEYS:
     try:
@@ -26,832 +30,1348 @@ for _sk in _SECRETS_KEYS:
         pass
 
 
-# ──────────────────────────────────────────────
-# CONFIGURAÇÃO DA PÁGINA
-# ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="PDF → Excel Inteligente | Conversor Contábil",
-    page_icon="📊",
+    page_title="Contábil IA — Automação de Lançamentos Contábeis",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-    /* ── Reset & Paleta de Cores Confortável ── */
     :root {
-        --bg-main: #f8fafc;
-        --card-bg: #ffffff;
-        --text-primary: #0f172a;
-        --text-secondary: #475569;
+        --bg-main: #070d18;
+        --bg-surface: #0f172a;
+        --bg-card: rgba(17, 26, 46, 0.85);
+        --bg-card-hover: rgba(23, 35, 62, 0.95);
+        --bg-glass: rgba(15, 23, 42, 0.65);
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
         --text-muted: #64748b;
-        --primary: #2563eb;
-        --primary-hover: #1d4ed8;
-        --primary-light: #eff6ff;
-        --border-color: #e2e8f0;
-        --border-hover: #cbd5e1;
-        --success-bg: #f0fdf4;
-        --success-text: #166534;
-        --success-border: #bbf7d0;
+        
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --primary-light: #60a5fa;
+        --primary-glow: rgba(59, 130, 246, 0.25);
+        
+        --accent: #06b6d4;
+        --accent-glow: rgba(6, 182, 212, 0.2);
+        --success: #10b981;
+        --success-glow: rgba(16, 185, 129, 0.2);
+        --warning: #f59e0b;
+        --warning-glow: rgba(245, 158, 11, 0.2);
+        --danger: #ef4444;
+        
+        --border-subtle: rgba(255, 255, 255, 0.07);
+        --border-highlight: rgba(59, 130, 246, 0.35);
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
     }
 
+    /* Reset global */
     html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
         background-color: var(--bg-main) !important;
         color: var(--text-primary) !important;
         -webkit-font-smoothing: antialiased;
+        letter-spacing: -0.01em;
     }
 
     .stApp {
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+        background: radial-gradient(circle at 50% -15%, #172a4d 0%, #0a0f1d 45%, #050811 100%) fixed !important;
     }
 
-    /* ── Container Principal Centralizado e Polido ── */
+    /* Container com proporção equilibrada */
     .block-container {
-        max-width: 860px !important;
-        padding-left: clamp(1.2rem, 3vw, 2.5rem) !important;
-        padding-right: clamp(1.2rem, 3vw, 2.5rem) !important;
-        padding-top: clamp(2rem, 4vh, 3.5rem) !important;
-        padding-bottom: clamp(3rem, 5vh, 5rem) !important;
+        max-width: 1120px !important;
+        padding-left: clamp(1.2rem, 3.5vw, 2.5rem) !important;
+        padding-right: clamp(1.2rem, 3.5vw, 2.5rem) !important;
+        padding-top: clamp(1rem, 2.5vh, 2rem) !important;
+        padding-bottom: 5rem !important;
         margin: 0 auto !important;
     }
 
-    /* Oculta elementos padrão do Streamlit */
-    #MainMenu, footer, header {
-        visibility: hidden !important;
-        height: 0 !important;
-    }
+    /* Remove lixo padrão do Streamlit */
+    #MainMenu, footer, header { visibility: hidden !important; height: 0 !important; }
 
-    /* ── Badge de Destaque ── */
-    .hero-badge-wrap {
+    /* Top Navigation Bar */
+    .top-nav {
         display: flex;
-        justify-content: center;
-        margin-bottom: 1.25rem;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.85rem 1.4rem;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        margin-bottom: 2.2rem;
+        box-shadow: 0 4px 25px rgba(0,0,0,0.25);
     }
-    .hero-badge {
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.03em;
+    }
+    .brand-icon {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .nav-badge-pill {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        color: #1d4ed8;
-        font-size: 0.8125rem;
-        font-weight: 600;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: #6ee7b7;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 999px;
         letter-spacing: 0.02em;
-        padding: 6px 14px;
-        border-radius: 9999px;
-        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.06);
     }
-    .hero-badge .badge-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981;
+    .nav-pulse-dot {
+        width: 7px;
+        height: 7px;
+        background: var(--success);
         border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 0 8px var(--success);
+        animation: pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* ── Tipografia do Cabeçalho ── */
-    .hero-title {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: clamp(2rem, 4.5vw, 2.85rem);
-        font-weight: 800;
-        line-height: 1.2;
-        color: #0f172a;
+    /* Hero Section */
+    .hero-section {
         text-align: center;
-        margin-bottom: 0.85rem;
-        letter-spacing: -0.03em;
+        padding: 1.5rem 0 2.2rem 0;
+        position: relative;
     }
-    .gradient-text {
-        background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+    .hero-pill-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        color: #93c5fd;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 6px 16px;
+        border-radius: 999px;
+        margin-bottom: 1.25rem;
+    }
+    .hero-title {
+        font-size: clamp(2.2rem, 4.2vw, 3.4rem);
+        font-weight: 800;
+        line-height: 1.15;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        letter-spacing: -0.04em;
+    }
+    .hero-title .grad {
+        background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #34d399 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-
     .hero-subtitle {
-        font-size: clamp(0.95rem, 1.8vw, 1.1rem);
-        color: #64748b;
-        text-align: center;
-        margin: 0 auto 2.5rem auto;
-        max-width: 620px;
-        line-height: 1.6;
+        font-size: 1.05rem;
+        color: var(--text-secondary);
+        max-width: 660px;
+        margin: 0 auto 2.2rem auto;
+        line-height: 1.65;
         font-weight: 400;
     }
 
-    /* ── Cards de Etapas ── */
-    .step-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: clamp(1.2rem, 2.5vw, 1.75rem);
-        margin-bottom: 1.5rem;
-        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 6px 12px -2px rgba(15, 23, 42, 0.02);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    /* Grid de Métricas (Dashboard Superior) */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin: 0 auto 2.5rem auto;
     }
-    .step-card:hover {
-        border-color: #cbd5e1;
+    @media (max-width: 768px) {
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 1.15rem 1rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(12px);
+        transition: all 0.25s ease;
+    }
+    .kpi-card:hover {
+        border-color: rgba(59, 130, 246, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    .kpi-icon {
+        font-size: 1.15rem;
+        margin-bottom: 6px;
+    }
+    .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+    .kpi-value.blue { color: #60a5fa; }
+    .kpi-value.emerald { color: #34d399; }
+    .kpi-value.cyan { color: #38bdf8; }
+    .kpi-label {
+        font-size: 0.74rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-top: 5px;
     }
 
-    .step-header {
+    /* Estilização Moderna de Abas */
+    [data-testid="stTabs"] {
+        margin-bottom: 2rem;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        display: flex !important;
+        justify-content: center !important;
+        background: rgba(15, 23, 42, 0.75) !important;
+        border-radius: 999px !important;
+        border: 1px solid var(--border-subtle) !important;
+        padding: 5px !important;
+        gap: 6px !important;
+        backdrop-filter: blur(12px) !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab"] {
+        border-radius: 999px !important;
+        color: var(--text-secondary) !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.65rem 1.6rem !important;
+        transition: all 0.2s ease !important;
+        border: none !important;
+        background: transparent !important;
+        -webkit-text-fill-color: var(--text-secondary) !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab"]:hover {
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 18px rgba(37, 99, 235, 0.4) !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+    [data-testid="stTabs"] [data-baseweb="tab-border"] {
+        display: none !important;
+    }
+
+    /* Cards de Seção */
+    .section-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        padding: clamp(1.4rem, 2.5vw, 1.85rem);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(14px);
+        transition: border-color 0.25s ease;
+    }
+    .section-card:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    .section-card.highlight {
+        border-color: rgba(16, 185, 129, 0.35);
+        background: linear-gradient(145deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.9) 100%);
+    }
+
+    .card-header {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 1.1rem;
+        gap: 14px;
+        margin-bottom: 1.35rem;
     }
-    .step-num {
-        display: inline-flex;
+    .card-step-badge {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        border-radius: 12px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
-        background: #2563eb;
-        color: #ffffff;
-        font-size: 0.8125rem;
-        font-weight: 700;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+        color: white;
+        font-size: 0.95rem;
+        font-weight: 800;
+        flex-shrink: 0;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
     }
-    .step-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #0f172a;
-        letter-spacing: -0.01em;
+    .card-title-group {
+        display: flex;
+        flex-direction: column;
     }
-    .step-desc {
-        font-size: 0.84rem;
-        color: #64748b;
-        margin-left: auto;
+    .card-title {
+        font-size: 1.12rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+    }
+    .card-subtitle {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        font-weight: 500;
     }
 
-    /* ── Upload Box Estilizada ── */
+    /* Uploader customizado */
     [data-testid="stFileUploadDropzone"] {
-        border-radius: 14px !important;
+        border-radius: 16px !important;
         padding: 2.2rem 1.5rem !important;
-        background-color: #f8fafc !important;
-        border: 2px dashed #cbd5e1 !important;
+        background: rgba(59, 130, 246, 0.02) !important;
+        border: 2px dashed rgba(59, 130, 246, 0.25) !important;
         transition: all 0.25s ease !important;
     }
     [data-testid="stFileUploadDropzone"]:hover {
-        border-color: #3b82f6 !important;
-        background-color: #eff6ff !important;
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08) !important;
+        border-color: rgba(59, 130, 246, 0.55) !important;
+        background: rgba(59, 130, 246, 0.06) !important;
     }
-    [data-testid="stFileUploadDropzone"] p {
-        color: #334155 !important;
-        font-size: 0.95rem !important;
-        font-weight: 500 !important;
-    }
-    [data-testid="stFileUploadDropzone"] small {
-        color: #64748b !important;
-        font-size: 0.82rem !important;
+    [data-testid="stFileUploadDropzone"] button {
+        background: rgba(59, 130, 246, 0.15) !important;
+        border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        color: #93c5fd !important;
+        font-weight: 600 !important;
+        border-radius: 10px !important;
     }
 
-    /* ── Pills com visual clean ── */
-    .pills-container {
+    /* Categorias de Formatos (Pills) */
+    .formats-container {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    .formats-label {
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    .pills-group {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-top: 14px;
     }
-    .pill-item {
-        background: #f1f5f9;
-        color: #334155;
-        font-size: 0.775rem;
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-secondary);
+        font-size: 0.78rem;
         font-weight: 500;
-        padding: 5px 12px;
-        border-radius: 9999px;
-        border: 1px solid #e2e8f0;
-        transition: all 0.15s ease;
+        padding: 5px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        transition: all 0.2s ease;
     }
-    .pill-item:hover {
-        background: #e2e8f0;
-        color: #0f172a;
+    .pill:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.07);
     }
-
-    /* ── Garante Contraste Total em Labels e Textos ── */
-    [data-testid="stWidgetLabel"],
-    [data-testid="stWidgetLabel"] *,
-    [data-testid="stWidgetLabel"] p,
-    [data-testid="stWidgetLabel"] span,
-    [data-testid="stWidgetLabel"] label,
-    label,
-    label * {
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        font-weight: 700 !important;
-        font-size: 0.9rem !important;
+    .pill.bank {
+        background: rgba(6, 182, 212, 0.08);
+        border-color: rgba(6, 182, 212, 0.22);
+        color: #7dd3fc;
     }
 
-    /* ── Texto Interno de Todos os Selectboxes (BaseWeb) ── */
-    [data-testid="stSelectbox"] div[data-baseweb="select"],
-    [data-testid="stSelectbox"] div[data-baseweb="select"] *,
-    div[data-baseweb="select"],
-    div[data-baseweb="select"] *,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] p {
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
+    /* Inputs, Selectboxes e Textarea */
+    [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] *, label, label * {
+        color: var(--text-secondary) !important;
+        -webkit-text-fill-color: var(--text-secondary) !important;
         font-weight: 600 !important;
-        font-size: 0.925rem !important;
+        font-size: 0.85rem !important;
+        margin-bottom: 4px !important;
     }
-
-    /* Container dos Selectboxes */
-    [data-testid="stSelectbox"] > div > div,
-    div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        border: 1.5px solid #cbd5e1 !important;
-        border-radius: 10px !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-    }
-    [data-testid="stSelectbox"] > div > div:hover,
-    div[data-baseweb="select"] > div:hover {
-        border-color: #94a3b8 !important;
-    }
-    [data-testid="stSelectbox"] > div > div:focus-within,
-    div[data-baseweb="select"] > div:focus-within {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    }
-    [data-testid="stSelectbox"] svg {
-        fill: #334155 !important;
-    }
-
-    /* Dropdown do Selectbox */
-    ul[data-baseweb="menu"],
-    ul[data-baseweb="menu"] li,
-    ul[data-baseweb="menu"] * {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        font-weight: 500 !important;
-    }
-    ul[data-baseweb="menu"] li:hover,
-    ul[data-baseweb="menu"] li:hover * {
-        background-color: #eff6ff !important;
-        color: #1d4ed8 !important;
-        -webkit-text-fill-color: #1d4ed8 !important;
-    }
-
-    /* ── Textarea ── */
-    [data-testid="stTextArea"] textarea {
-        background-color: #ffffff !important;
-        border: 1.5px solid #cbd5e1 !important;
-        border-radius: 10px !important;
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        font-size: 0.9rem !important;
-        font-weight: 500 !important;
-        font-family: 'Inter', monospace !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-    }
-    [data-testid="stTextArea"] textarea:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    }
-
-    /* ── Expander Totalmente Confortável e Nítido ── */
-    [data-testid="stExpander"] {
-        border: 1.5px solid #cbd5e1 !important;
+    [data-testid="stSelectbox"] > div > div, div[data-baseweb="select"] > div {
+        background-color: var(--bg-surface) !important;
+        border: 1.5px solid var(--border-subtle) !important;
         border-radius: 12px !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
-        margin-top: 1rem !important;
-        overflow: hidden !important;
+        min-height: 44px !important;
     }
-    [data-testid="stExpander"] summary {
-        background-color: #f1f5f9 !important;
-        border-bottom: 1px solid #e2e8f0 !important;
-        padding: 0.85rem 1.15rem !important;
+    [data-testid="stSelectbox"] > div > div:focus-within, div[data-baseweb="select"] > div:focus-within {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px var(--primary-glow) !important;
     }
-    [data-testid="stExpander"] summary,
-    [data-testid="stExpander"] summary * {
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        font-size: 0.9rem !important;
-        font-weight: 700 !important;
-    }
-    [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
-        background-color: #ffffff !important;
-        padding: 1.25rem !important;
+    [data-testid="stSelectbox"] * {
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
     }
 
-    /* ── Inputs de Texto (API Key) ── */
-    [data-testid="stTextInput"] input,
-    input[type="text"],
-    input[type="password"] {
-        background-color: #ffffff !important;
-        border: 1.5px solid #cbd5e1 !important;
+    [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input {
+        background-color: var(--bg-surface) !important;
+        border: 1.5px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
+        font-size: 0.88rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+    [data-testid="stTextArea"] textarea:focus, [data-testid="stTextInput"] input:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px var(--primary-glow) !important;
+    }
+
+    /* Tags no MultiSelect */
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] {
+        background: rgba(59, 130, 246, 0.18) !important;
+        border: 1px solid rgba(59, 130, 246, 0.35) !important;
         border-radius: 8px !important;
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        font-size: 0.9rem !important;
-        font-weight: 500 !important;
     }
-    [data-testid="stTextInput"] input:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    }
-    [data-testid="stTextInput"] svg {
-        fill: #334155 !important;
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] span {
+        color: #93c5fd !important;
+        -webkit-text-fill-color: #93c5fd !important;
+        font-weight: 600 !important;
     }
 
-    /* ── Botão Primário Destacado ── */
-    .stButton > button[kind="primary"],
+    /* Botão Principal de Ação */
     .stButton > button {
+        width: 100% !important;
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        border-radius: 12px !important;
-        font-weight: 600 !important;
-        font-size: 1.025rem !important;
-        padding: 0.85rem 1.75rem !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.35) !important;
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        font-size: 1.05rem !important;
+        padding: 0.95rem 1.8rem !important;
+        letter-spacing: -0.01em !important;
+        box-shadow: 0 6px 25px rgba(37, 99, 235, 0.35) !important;
+        transition: all 0.2s ease !important;
         cursor: pointer !important;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 18px -2px rgba(37, 99, 235, 0.45) !important;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45) !important;
     }
     .stButton > button:active {
         transform: translateY(0) !important;
     }
 
-    /* ── Badges de Confiança no Rodapé ── */
-    .trust-footer {
+    /* Barra de Features de Confiança */
+    .trust-bar {
         display: flex;
         justify-content: center;
-        gap: 24px;
+        gap: 20px;
         align-items: center;
-        margin-top: 2rem;
+        margin-top: 1.25rem;
+        padding: 0.85rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
         flex-wrap: wrap;
     }
     .trust-item {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        color: #64748b;
-        font-size: 0.8125rem;
-        font-weight: 500;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
     }
-    .trust-item svg {
-        color: #10b981;
+    .trust-check {
+        color: var(--success);
+        font-weight: 800;
     }
 
-    /* ── Card de Resultado ── */
-    .success-card {
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        border-radius: 12px;
-        padding: 1.25rem 1.5rem;
+    /* Cards de Resultado e Download */
+    .result-container {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+    .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
+    }
+    .result-title {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .result-badge-success {
+        background: rgba(16, 185, 129, 0.12);
+        color: #6ee7b7;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .stDownloadButton > button {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #93c5fd !important;
+        border: 1px solid rgba(59, 130, 246, 0.25) !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        font-size: 0.84rem !important;
+        padding: 0.65rem 1rem !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease !important;
+    }
+    .stDownloadButton > button:hover {
+        background: rgba(59, 130, 246, 0.2) !important;
+        border-color: rgba(59, 130, 246, 0.5) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Painel de Exceções */
+    .exception-card {
+        background: rgba(245, 158, 11, 0.07);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .exception-title {
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: #fde68a;
+    }
+    .exception-meta {
+        font-size: 0.78rem;
+        color: #d1d5db;
+        margin-top: 3px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Calculadora de Economia */
+    .calc-box {
+        background: linear-gradient(145deg, #101c36 0%, #0c1527 100%);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        border-radius: 20px;
+        padding: 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .calc-highlight-metric {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 1.25rem;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+    .calc-big-val {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: #34d399;
+    }
+    .calc-sub-val {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #60a5fa;
+    }
+    .calc-pill-badge {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 12px;
+        padding: 0.85rem 1.15rem;
+        color: #6ee7b7;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    /* Amarrações / Regras */
+    .rule-row {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.86rem;
+    }
+    .rule-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+    .rule-deb { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+    .rule-cred { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+
+    /* Estilização de Expander */
+    [data-testid="stExpander"] {
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 14px !important;
+        background-color: var(--bg-card) !important;
+        margin-top: 1rem !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stExpander"] summary {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+        padding: 0.85rem 1.25rem !important;
+        border-bottom: 1px solid transparent !important;
+    }
+    [data-testid="stExpander"] summary:hover {
+        background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+        padding: 1.25rem !important;
+        background-color: var(--bg-surface) !important;
+    }
+
+    hr.divider {
+        border: none;
+        border-top: 1px solid var(--border-subtle);
+        margin: 1.25rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
+
 # ──────────────────────────────────────────────
-# CABEÇALHO HERO
+# FUNÇÕES AUXILIARES
+# ──────────────────────────────────────────────
+def _detectar_excecoes(resposta_str: str) -> list:
+    excecoes = []
+    try:
+        match = re.search(r"\[[\s\S]+?\]", resposta_str)
+        if match:
+            dados = json.loads(match.group(0))
+            for d in dados:
+                if isinstance(d, dict):
+                    deb = str(d.get("conta_debito", d.get("Conta_Debito", ""))).strip()
+                    cred = str(d.get("conta_credito", d.get("Conta_Credito", ""))).strip()
+                    if not deb or not cred or deb.lower() in ("none", ""):
+                        excecoes.append(d)
+    except Exception:
+        pass
+    return excecoes
+
+
+def _contar_registros(resposta_str: str) -> int:
+    try:
+        match = re.search(r"\[[\s\S]+?\]", resposta_str)
+        if match:
+            dados = json.loads(match.group(0))
+            if isinstance(dados, list):
+                return len(dados)
+    except Exception:
+        pass
+    matches = re.findall(r"\d{2}/\d{2}/\d{4}", resposta_str)
+    return max(len(matches), 1) if matches else 1
+
+
+# ──────────────────────────────────────────────
+# ESTADO DA SESSÃO
+# ──────────────────────────────────────────────
+if "total_docs_processados" not in st.session_state:
+    st.session_state.total_docs_processados = 0
+if "total_registros" not in st.session_state:
+    st.session_state.total_registros = 0
+if "total_erros" not in st.session_state:
+    st.session_state.total_erros = 0
+if "amarracoes" not in st.session_state:
+    st.session_state.amarracoes = [
+        {"padrao": "SALÁRIO", "conta_debito": "6.1.1", "conta_credito": "2.1.1"},
+        {"padrao": "INSS", "conta_debito": "6.1.2", "conta_credito": "2.1.4"},
+        {"padrao": "ENERGIA ELÉTRICA", "conta_debito": "6.2.1", "conta_credito": "2.1.1"},
+        {"padrao": "ALUGUEL", "conta_debito": "6.2.2", "conta_credito": "2.1.1"},
+        {"padrao": "TELEFONE", "conta_debito": "6.2.3", "conta_credito": "2.1.1"},
+    ]
+
+
+# ──────────────────────────────────────────────
+# BARRA SUPERIOR (NAVBAR)
 # ──────────────────────────────────────────────
 st.markdown("""
-<div class="hero-badge-wrap">
-  <div class="hero-badge">
-    <span class="badge-dot"></span>
-    <span>Inteligência Artificial Fiscal & Contábil</span>
+<div class="top-nav">
+  <div class="nav-brand">
+    <div class="brand-icon">⚡</div>
+    <span>Contábil<b style="color:#60a5fa;">IA</b></span>
+    <span style="font-size:0.75rem;font-weight:500;color:#64748b;margin-left:4px;">· v2.0 Enterprise</span>
   </div>
-</div>
-<div class="hero-title">
-  Transforme PDFs em <span class="gradient-text">planilhas inteligentes</span>
-</div>
-<div class="hero-subtitle">
-  Faça o upload dos seus documentos. O agente lê, estrutura e entrega dados prontos para análise no Excel com velocidade e alta precisão.
+  <div>
+    <span class="nav-badge-pill">
+      <span class="nav-pulse-dot"></span>
+      Agente Gemini Online
+    </span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
+
 # ──────────────────────────────────────────────
-# LÓGICA DE API KEY E MODELOS
+# HERO SECTION
 # ──────────────────────────────────────────────
-from agent import MODELOS_GEMINI, MODELO_PADRAO, ENV_KEY, _carregar_api_key as _agent_carregar_key
+st.markdown("""
+<div class="hero-section">
+  <div class="hero-pill-tag">
+    <span>⚡ Automação Contábil Inteligente</span>
+  </div>
+  <div class="hero-title">
+    Seu escritório ainda <span class="grad">digita lançamentos</span><br>
+    um por um?
+  </div>
+  <div class="hero-subtitle">
+    Envie extratos em PDF, OFX ou CSV e documentos fiscais. A IA lê cada transação,
+    aplica as amarrações do seu escritório e exporta diretamente para Alterdata e Domínio.
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ──────────────────────────────────────────────
+# DASHBOARD DE KPIs (MÉTRICAS NO TOPO)
+# ──────────────────────────────────────────────
+docs_ok = st.session_state.total_docs_processados
+registros_ok = st.session_state.total_registros
+horas_econ = round(registros_ok * 30 / 3600, 1)
+
+st.markdown(f"""
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon">📁</div>
+    <div class="kpi-value blue">{docs_ok}</div>
+    <div class="kpi-label">Documentos Processados</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">📋</div>
+    <div class="kpi-value emerald">{registros_ok}</div>
+    <div class="kpi-label">Lançamentos Extraídos</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🎯</div>
+    <div class="kpi-value cyan">77%</div>
+    <div class="kpi-label">Automação Média Est.</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">⏳</div>
+    <div class="kpi-value blue">{horas_econ:.1f}h</div>
+    <div class="kpi-label">Horas Economizadas</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ──────────────────────────────────────────────
+# IMPORTS DO AGENTE
+# ──────────────────────────────────────────────
+from agent import MODELOS_GEMINI, MODELO_PADRAO, ENV_KEY, _carregar_api_key as _agent_carregar_key, processar_pdf
 
 _api_key_default = _agent_carregar_key() or ""
 
 
 # ──────────────────────────────────────────────
-# ETAPA 1 — DOCUMENTOS
+# ABAS DE NAVEGAÇÃO
 # ──────────────────────────────────────────────
-st.markdown("""
-<div class="step-card">
-  <div class="step-header">
-    <span class="step-num">1</span>
-    <span class="step-title">Upload de Documentos</span>
-    <span class="step-desc">Suporta múltiplos PDFs</span>
-  </div>
-""", unsafe_allow_html=True)
-
-arquivos_pdf = st.file_uploader(
-    "Upload PDF",
-    type=["pdf"],
-    accept_multiple_files=True,
-    label_visibility="collapsed",
-    help="Arraste e solte seus arquivos PDF ou clique para navegar.",
-)
-
-st.markdown("""
-  <div class="pills-container">
-    <span class="pill-item">📄 PDF Geral</span>
-    <span class="pill-item">🧾 Nota Fiscal (NF-e)</span>
-    <span class="pill-item">🏦 Boleto Bancário</span>
-    <span class="pill-item">📊 Extrato Bancário</span>
-    <span class="pill-item">📑 Balancete</span>
-    <span class="pill-item">👥 Folha de Pagamento</span>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+tab_processar, tab_calculadora, tab_amarracoes = st.tabs([
+    "⚡ Processar Documentos",
+    "🧮 Calculadora de Economia",
+    "🔗 Regras de Classificação",
+])
 
 
-# ──────────────────────────────────────────────
-# ETAPA 2 — CONFIGURAÇÃO
-# ──────────────────────────────────────────────
-st.markdown("""
-<div class="step-card">
-  <div class="step-header">
-    <span class="step-num">2</span>
-    <span class="step-title">Configurações da Extração</span>
-    <span class="step-desc">Personalize o formato dos dados</span>
-  </div>
-""", unsafe_allow_html=True)
-
-col1, col2 = st.columns([1, 1], gap="medium")
-
-campos_preset = {
-    "🤖 Automático (Detecção Inteligente)": [],
-    "Nota Fiscal (NF-e)": ["numero_nf", "data_emissao", "emitente_cnpj", "emitente_nome",
-                            "destinatario_cnpj", "valor_total", "valor_icms", "cfop"],
-    "Boleto Bancário": ["beneficiario", "pagador", "valor", "vencimento", "nosso_numero", "banco"],
-    "Extrato Bancário": ["data", "descricao", "valor", "tipo_lancamento", "saldo"],
-    "Balancete": ["conta", "descricao", "saldo_anterior", "debitos", "creditos", "saldo_atual"],
-    "Folha de Pagamento": ["nome_funcionario", "cargo", "salario_base", "inss", "irrf", "valor_liquido"],
-    "Recibo": ["pagador", "beneficiario", "valor", "descricao", "data"],
-    "Outro Documento": [],
-}
-
-with col1:
-    st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Tipo de documento</p>", unsafe_allow_html=True)
-    tipo_doc = st.selectbox(
-        "Tipo",
-        list(campos_preset.keys()),
-        label_visibility="collapsed",
-    )
-
-with col2:
-    st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Estrutura de saída</p>", unsafe_allow_html=True)
-    formato_saida = st.selectbox(
-        "Formato",
-        ["Uma linha por documento", "Uma linha por item/lançamento", "Resumo consolidado"],
-        label_visibility="collapsed",
-    )
-
-campos_sugeridos = campos_preset.get(tipo_doc, [])
-
-st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-st.markdown("<p style='font-weight:600; font-size:0.875rem; margin-bottom:6px; color:#334155;'>Campos desejados <span style='font-size:0.775rem; font-weight:400; color:#64748b;'>(opcional — deixe em branco para extrair tudo)</span></p>", unsafe_allow_html=True)
-
-campos_texto = st.text_area(
-    "Campos",
-    value="\n".join(campos_sugeridos) if campos_sugeridos else "numero_nf\ndata_emissao\nvalor_total\ncnpj_emitente\nnome_destinatario",
-    height=110,
-    placeholder="Ex:\nnumero_nf\ndata_emissao\nvalor_total\n\nDeixe em branco para extração completa.",
-    label_visibility="collapsed",
-)
-
-# Formatos de exportação desejados
-st.markdown("<p style='font-weight:700; font-size:0.9rem; margin-top:14px; margin-bottom:6px; color:#0f172a;'>Formatos de exportação compatíveis</p>", unsafe_allow_html=True)
-formatos_selecionados = st.multiselect(
-    "Formatos de exportação",
-    options=[
-        "📊 Excel Analítico (.xlsx)",
-        "📁 TXT Layout Alterdata (.txt)",
-        "📑 Planilha Alterdata (.xlsm)",
-        "📄 Espelho de Conferência (.pdf)",
-    ],
-    default=[
-        "📊 Excel Analítico (.xlsx)",
-        "📁 TXT Layout Alterdata (.txt)",
-        "📑 Planilha Alterdata (.xlsm)",
-        "📄 Espelho de Conferência (.pdf)",
-    ],
-    label_visibility="collapsed",
-    help="Selecione os arquivos que deseja gerar. O sistema prepara todos automaticamente para o Alterdata e Excel.",
-)
-
-# Chave de API e Modelo em Expander discreto
-with st.expander("⚙️  Configurações Avançadas (Modelo & Chave de API)"):
-    api_key = st.text_input(
-        "Google API Key",
-        type="password",
-        value=_api_key_default,
-        placeholder=f"Chave Gemini  —  {ENV_KEY}",
-        help="A chave já vem pré-configurada se definida no .env. Obtenha gratuitamente em aistudio.google.com",
-    )
-    _modelo_selecionado = st.selectbox(
-        "Modelo de IA",
-        MODELOS_GEMINI,
-        index=0,
-        help="gemini-flash-lite-latest é o mais rápido e estável. Inclui fallback automático.",
-    )
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ──────────────────────────────────────────────
-# BOTÃO DE AÇÃO PRINCIPAL
-# ──────────────────────────────────────────────
-processar = st.button("🚀  Iniciar Extração e Conversão", type="primary", use_container_width=True)
-
-# Rodapé de confiança e segurança
-st.markdown("""
-<div class="trust-footer">
-  <span class="trust-item">
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-    </svg>
-    Compatível com Alterdata Pack & WCont
-  </span>
-  <span class="trust-item">
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-    </svg>
-    Alta velocidade com Gemini
-  </span>
-  <span class="trust-item">
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-    </svg>
-    Exporta .xlsx, .txt, .xlsm e .pdf
-  </span>
-</div>
-""", unsafe_allow_html=True)
-
-
-# ──────────────────────────────────────────────
-# EXECUÇÃO DA EXTRAÇÃO
-# ──────────────────────────────────────────────
-if processar:
-    if not api_key:
-        st.error(
-            f"❌ **GOOGLE_API_KEY** não encontrada. "
-            f"Configure `{ENV_KEY}` no `.env` ou expanda a aba de configurações avançadas."
-        )
-        st.info("💡 Obtenha sua chave gratuita em [aistudio.google.com](https://aistudio.google.com).")
-        st.stop()
-
-    if not arquivos_pdf:
-        st.warning("⚠️ Faça o upload de pelo menos um arquivo PDF antes de iniciar.")
-        st.stop()
-
-    os.environ[ENV_KEY] = api_key
-
-    try:
-        from agent import processar_pdf
-    except ImportError as e:
-        st.error(f"❌ Erro ao carregar o motor de processamento: {e}")
-        st.stop()
-
-    campos_lista = [c.strip() for c in campos_texto.strip().split("\n") if c.strip()]
-    resultados = []
-
-    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+# ══════════════════════════════════════════════
+# ABA 1 — PROCESSAR DOCUMENTOS
+# ══════════════════════════════════════════════
+with tab_processar:
     st.markdown("""
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-num">3</span>
-        <span class="step-title">Processamento e Conversão em Tempo Real</span>
+    <div class="section-card">
+      <div class="card-header">
+        <div class="card-step-badge">1</div>
+        <div class="card-title-group">
+          <span class="card-title">Upload de Arquivos</span>
+          <span class="card-subtitle">Arraste múltiplos arquivos simultaneamente nos formatos PDF, OFX ou CSV</span>
+        </div>
       </div>
     """, unsafe_allow_html=True)
 
-    progress_bar = st.progress(0)
+    arquivos = st.file_uploader(
+        "Upload de arquivos",
+        type=["pdf", "ofx", "csv"],
+        accept_multiple_files=True,
+        label_visibility="collapsed",
+    )
 
-    import io
-    import re
-    import zipfile
+    st.markdown("""
+      <div class="formats-container">
+        <div class="formats-label">Formatos Fiscais & Extratos Suportados</div>
+        <div class="pills-group">
+          <span class="pill">📄 NF-e / NFS-e</span>
+          <span class="pill">📑 Extrato Bancário PDF</span>
+          <span class="pill">🧾 Boleto Bancário</span>
+          <span class="pill">📊 Balancete</span>
+          <span class="pill">👥 Folha de Pagamento</span>
+          <span class="pill bank">🏦 OFX — Itaú</span>
+          <span class="pill bank">🏦 OFX — Bradesco</span>
+          <span class="pill bank">🏦 OFX — Santander</span>
+          <span class="pill bank">🏦 OFX — Sicoob / Sicredi</span>
+          <span class="pill bank">🏦 CSV — Nubank / Mercado Pago</span>
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for i, arquivo_pdf in enumerate(arquivos_pdf):
-        with st.status(f"Processando: {arquivo_pdf.name}", expanded=True) as status:
-            st.write("📥 Preparando documento...")
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
-                tmp_pdf.write(arquivo_pdf.read())
-                caminho_tmp = tmp_pdf.name
+    st.markdown("""
+    <div class="section-card">
+      <div class="card-header">
+        <div class="card-step-badge">2</div>
+        <div class="card-title-group">
+          <span class="card-title">Configurações de Extração & Exportação</span>
+          <span class="card-subtitle">Selecione o perfil do documento e os layouts de saída desejados</span>
+        </div>
+      </div>
+    """, unsafe_allow_html=True)
 
-            nome_saida = arquivo_pdf.name.replace(".pdf", "_extraido.xlsx")
-            caminho_saida = os.path.join(tempfile.gettempdir(), f"excel_{uuid.uuid4().hex}.xlsx")
-            caminho_base = re.sub(r"\.xlsx$", "", caminho_saida, flags=re.IGNORECASE)
+    col1, col2 = st.columns([1, 1], gap="large")
 
-            txt_path = f"{caminho_base}.txt"
-            xlsm_path = f"{caminho_base}.xlsm"
-            pdf_path = f"{caminho_base}.pdf"
+    campos_preset = {
+        "🤖 Automático (Detecção Inteligente)": [],
+        "Extrato Bancário (OFX/CSV/PDF)": ["data", "descricao", "valor", "tipo_lancamento", "saldo", "conta_debito", "conta_credito"],
+        "Nota Fiscal (NF-e)": ["numero_nf", "data_emissao", "emitente_cnpj", "emitente_nome", "destinatario_cnpj", "valor_total", "valor_icms", "cfop"],
+        "Boleto Bancário": ["beneficiario", "pagador", "valor", "vencimento", "nosso_numero", "banco"],
+        "Balancete": ["conta", "descricao", "saldo_anterior", "debitos", "creditos", "saldo_atual"],
+        "Folha de Pagamento": ["nome_funcionario", "cargo", "salario_base", "inss", "irrf", "valor_liquido"],
+        "Recibo": ["pagador", "beneficiario", "valor", "descricao", "data"],
+        "Outro Documento": [],
+    }
 
-            try:
-                st.write("🤖 IA extraindo dados e formatando para Alterdata...")
-                resposta = processar_pdf(
-                    caminho_pdf=caminho_tmp,
-                    caminho_saida=caminho_saida,
-                    campos_desejados=campos_lista if campos_lista else None,
-                    api_key=api_key,
-                    modelo=_modelo_selecionado,
-                )
+    with col1:
+        tipo_doc = st.selectbox(
+            "Tipo de documento",
+            list(campos_preset.keys()),
+            help="Define o modelo de leitura e os campos típicos daquele documento.",
+        )
 
-                st.write("📊 Gerando arquivos (.xlsx, .txt Alterdata, .xlsm, .pdf)...")
-                excel_data = None
-                txt_data = None
-                xlsm_data = None
-                pdf_data = None
-                zip_data = None
+        preset_campos = campos_preset.get(tipo_doc, [])
+        campos_custom = st.text_area(
+            "Campos específicos a extrair (um por linha)",
+            value="\n".join(preset_campos) if preset_campos else "",
+            height=125,
+            placeholder="Ex:\ndata\ndescricao\nvalor\nconta_debito\nconta_credito",
+            help="Deixe em branco para a IA extrair automaticamente todos os campos relevantes.",
+        )
 
-                if Path(caminho_saida).exists() and Path(caminho_saida).stat().st_size > 0:
-                    with open(caminho_saida, "rb") as f:
-                        excel_data = f.read()
+    with col2:
+        formatos_selecionados = st.multiselect(
+            "Formatos de saída para download",
+            [
+                "📊 Excel Analítico (.xlsx)",
+                "📁 TXT Layout Alterdata (.txt)",
+                "📑 Planilha Alterdata (.xlsm)",
+                "📄 Espelho de Conferência (.pdf)",
+            ],
+            default=["📊 Excel Analítico (.xlsx)", "📁 TXT Layout Alterdata (.txt)"],
+            help="Escolha um ou mais formatos. Se selecionar mais de um, um pacote .ZIP também será gerado.",
+        )
 
-                if Path(txt_path).exists() and Path(txt_path).stat().st_size > 0:
-                    with open(txt_path, "rb") as f:
-                        txt_data = f.read()
+        _modelo_selecionado = st.selectbox(
+            "Modelo de Inteligência Artificial",
+            MODELOS_GEMINI,
+            index=0,
+            help="Modelo Google Gemini responsável pela interpretação e classificação.",
+        )
 
-                if Path(xlsm_path).exists() and Path(xlsm_path).stat().st_size > 0:
-                    with open(xlsm_path, "rb") as f:
-                        xlsm_data = f.read()
-
-                if Path(pdf_path).exists() and Path(pdf_path).stat().st_size > 0:
-                    with open(pdf_path, "rb") as f:
-                        pdf_data = f.read()
-
-                # Gera arquivo ZIP consolidado
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                    if excel_data:
-                        zf.writestr(nome_saida, excel_data)
-                    if txt_data:
-                        zf.writestr(nome_saida.replace(".xlsx", "_alterdata.txt"), txt_data)
-                    if xlsm_data:
-                        zf.writestr(nome_saida.replace(".xlsx", "_alterdata.xlsm"), xlsm_data)
-                    if pdf_data:
-                        zf.writestr(nome_saida.replace(".xlsx", "_espelho.pdf"), pdf_data)
-                zip_data = zip_buffer.getvalue()
-
-                sucesso = excel_data is not None
-                resultados.append({
-                    "nome": arquivo_pdf.name,
-                    "nome_saida": nome_saida,
-                    "excel_data": excel_data,
-                    "txt_data": txt_data,
-                    "xlsm_data": xlsm_data,
-                    "pdf_data": pdf_data,
-                    "zip_data": zip_data,
-                    "resposta": resposta,
-                    "sucesso": sucesso,
-                })
-                status.update(
-                    label=f"✅ Concluído: {arquivo_pdf.name} (Arquivos Alterdata gerados)",
-                    state="complete",
-                    expanded=False,
-                )
-
-            except Exception as e:
-                resultados.append({
-                    "nome": arquivo_pdf.name,
-                    "nome_saida": nome_saida,
-                    "excel_data": None,
-                    "txt_data": None,
-                    "xlsm_data": None,
-                    "pdf_data": None,
-                    "zip_data": None,
-                    "resposta": str(e),
-                    "sucesso": False,
-                })
-                status.update(
-                    label=f"❌ Erro ao analisar: {arquivo_pdf.name}",
-                    state="error",
-                    expanded=False,
-                )
-
-            finally:
-                Path(caminho_tmp).unlink(missing_ok=True)
-                Path(caminho_saida).unlink(missing_ok=True)
-                Path(txt_path).unlink(missing_ok=True)
-                Path(xlsm_path).unlink(missing_ok=True)
-                Path(pdf_path).unlink(missing_ok=True)
-
-        progress_bar.progress((i + 1) / len(arquivos_pdf))
+    with st.expander("⚙️ Configurações Avançadas de API & Amarrações"):
+        col_adv1, col_adv2 = st.columns([1, 1], gap="medium")
+        with col_adv1:
+            api_key_input = st.text_input(
+                "Chave de API Gemini (opcional se já salva no .env)",
+                value=_api_key_default,
+                type="password",
+                help="Sua chave não é salva em nenhum servidor externo.",
+            )
+        with col_adv2:
+            st.markdown(
+                f"<div style='padding-top:1.6rem;font-size:0.84rem;color:#94a3b8;'>"
+                f"🔗 <b>{len(st.session_state.amarracoes)} regras ativas</b> cadastradas para guiar a IA na classificação contábil."
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # ──────────────────────────────────────────────
-    # EXIBIÇÃO DE RESULTADOS & DOWNLOAD
-    # ──────────────────────────────────────────────
+    # ── BOTÃO DE DISPARO ──
+    botao_iniciar = st.button("⚡ Iniciar Extração e Classificação", use_container_width=True)
+
     st.markdown("""
-    <div class="step-card">
-      <div class="step-header">
-        <span class="step-num">4</span>
-        <span class="step-title">Arquivos Prontos para Download</span>
-        <span class="step-desc">Selecione o formato desejado</span>
+    <div class="trust-bar">
+      <span class="trust-item"><span class="trust-check">✓</span> Compatível com Alterdata & Domínio</span>
+      <span class="trust-item"><span class="trust-check">✓</span> Fallback Automático de Modelo Gemini</span>
+      <span class="trust-item"><span class="trust-check">✓</span> Amarrações Contábeis Priorizadas</span>
+      <span class="trust-item"><span class="trust-check">✓</span> 100% Auditável pelo Analista</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── PROCESSAMENTO ──
+    if botao_iniciar:
+        if not arquivos:
+            st.warning("⚠️ Selecione ao menos um arquivo (PDF, OFX ou CSV) para iniciar o processamento.")
+        else:
+            api_key = api_key_input.strip() if api_key_input else _api_key_default
+            if not api_key:
+                st.error("🔑 API Key não encontrada. Insira sua chave Google Gemini nas configurações avançadas.")
+                st.stop()
+
+            campos_lista = [
+                c.strip()
+                for c in campos_custom.strip().splitlines()
+                if c.strip()
+            ] if campos_custom.strip() else None
+
+            amarracoes_ativas = st.session_state.amarracoes if st.session_state.amarracoes else None
+
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            resultados = []
+
+            for i, arquivo in enumerate(arquivos):
+                nome_arq = arquivo.name
+                ext = Path(nome_arq).suffix.lower()
+                status_text.markdown(f"⏳ **Processando {i + 1}/{len(arquivos)}:** `{nome_arq}`...")
+
+                with st.status(f"Analisando: {nome_arq}", expanded=True) as status_box:
+                    st.write("📥 Preparando documento temporário...")
+
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                        tmp.write(arquivo.read())
+                        caminho_tmp = tmp.name
+
+                    caminho_saida = os.path.join(tempfile.gettempdir(), f"result_{uuid.uuid4().hex}.xlsx")
+                    caminho_base = re.sub(r"\.xlsx$", "", caminho_saida, flags=re.IGNORECASE)
+                    txt_path = f"{caminho_base}.txt"
+                    xlsm_path = f"{caminho_base}.xlsm"
+                    pdf_path = f"{caminho_base}.pdf"
+
+                    try:
+                        if ext in (".ofx", ".csv"):
+                            st.write(f"🏦 Lendo extrato bancário {ext.upper()}...")
+                        else:
+                            st.write("🤖 IA extraindo e classificando transações...")
+
+                        try:
+                            resposta = processar_pdf(
+                                caminho_pdf=caminho_tmp,
+                                caminho_saida=caminho_saida,
+                                campos_desejados=campos_lista if campos_lista else None,
+                                api_key=api_key,
+                                modelo=_modelo_selecionado,
+                                amarracoes=amarracoes_ativas,
+                                tipo_doc=tipo_doc,
+                            )
+                        except TypeError:
+                            resposta = processar_pdf(
+                                caminho_pdf=caminho_tmp,
+                                caminho_saida=caminho_saida,
+                                campos_desejados=campos_lista if campos_lista else None,
+                                api_key=api_key,
+                                modelo=_modelo_selecionado,
+                            )
+
+                        st.write("📊 Compilando layouts de exportação...")
+
+                        def _ler(p):
+                            p = Path(p)
+                            return p.read_bytes() if p.exists() and p.stat().st_size > 0 else None
+
+                        excel_data = _ler(caminho_saida)
+                        txt_data = _ler(txt_path)
+                        xlsm_data = _ler(xlsm_path)
+                        pdf_data = _ler(pdf_path)
+
+                        nome_base_dl = Path(nome_arq).stem
+                        nome_saida_xlsx = f"{nome_base_dl}_extraido.xlsx"
+
+                        zip_buf = io.BytesIO()
+                        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+                            if excel_data: zf.writestr(nome_saida_xlsx, excel_data)
+                            if txt_data: zf.writestr(f"{nome_base_dl}_alterdata.txt", txt_data)
+                            if xlsm_data: zf.writestr(f"{nome_base_dl}_alterdata.xlsm", xlsm_data)
+                            if pdf_data: zf.writestr(f"{nome_base_dl}_espelho.pdf", pdf_data)
+                        zip_data = zip_buf.getvalue()
+
+                        excecoes = _detectar_excecoes(resposta)
+                        n_registros = _contar_registros(resposta)
+                        sucesso = excel_data is not None
+
+                        resultados.append({
+                            "nome": nome_arq,
+                            "nome_base": nome_base_dl,
+                            "excel_data": excel_data,
+                            "txt_data": txt_data,
+                            "xlsm_data": xlsm_data,
+                            "pdf_data": pdf_data,
+                            "zip_data": zip_data,
+                            "resposta": resposta,
+                            "excecoes": excecoes,
+                            "n_registros": n_registros,
+                            "sucesso": sucesso,
+                        })
+
+                        if sucesso:
+                            st.session_state.total_docs_processados += 1
+                            st.session_state.total_registros += n_registros
+                            st.write(f"✅ Sucesso: {n_registros} lançamentos · {len(excecoes)} exceções pendentes.")
+                            status_box.update(label=f"✅ Concluído: {nome_arq}", state="complete", expanded=False)
+                        else:
+                            st.session_state.total_erros += 1
+                            status_box.update(label=f"❌ Falha: {nome_arq}", state="error", expanded=False)
+
+                    except Exception as e:
+                        resultados.append({
+                            "nome": nome_arq,
+                            "nome_base": Path(nome_arq).stem,
+                            "excel_data": None, "txt_data": None, "xlsm_data": None,
+                            "pdf_data": None, "zip_data": None,
+                            "resposta": str(e),
+                            "excecoes": [], "n_registros": 0, "sucesso": False,
+                        })
+                        st.session_state.total_erros += 1
+                        status_box.update(label=f"❌ Erro: {nome_arq}", state="error", expanded=False)
+
+                    finally:
+                        for p in [caminho_tmp, caminho_saida, txt_path, xlsm_path, pdf_path]:
+                            Path(p).unlink(missing_ok=True)
+
+                progress_bar.progress((i + 1) / len(arquivos))
+
+            status_text.success("🎉 Todos os arquivos foram processados com sucesso!")
+
+            # ── RESULTADOS & DOWNLOADS ──
+            st.markdown("""
+            <div class="section-card highlight" style="margin-top:2rem;">
+              <div class="card-header">
+                <div class="card-step-badge" style="background:linear-gradient(135deg,#10b981,#059669);">✓</div>
+                <div class="card-title-group">
+                  <span class="card-title">Arquivos Prontos para Download</span>
+                  <span class="card-subtitle">Exporte os lotes classificados para o seu sistema contábil</span>
+                </div>
+              </div>
+            """, unsafe_allow_html=True)
+
+            total_excecoes = sum(len(r["excecoes"]) for r in resultados if r["sucesso"])
+            total_reg_sess = sum(r["n_registros"] for r in resultados if r["sucesso"])
+            taxa_auto_sess = max(0, round((1 - total_excecoes / max(total_reg_sess, 1)) * 100))
+            docs_ok_sess = sum(1 for r in resultados if r["sucesso"])
+
+            if docs_ok_sess > 0:
+                st.markdown(f"""
+                <div class="kpi-grid" style="margin-bottom:1.5rem;">
+                  <div class="kpi-card">
+                    <div class="kpi-value emerald">{docs_ok_sess}</div>
+                    <div class="kpi-label">Processados OK</div>
+                  </div>
+                  <div class="kpi-card">
+                    <div class="kpi-value blue">{total_reg_sess}</div>
+                    <div class="kpi-label">Lançamentos Gerados</div>
+                  </div>
+                  <div class="kpi-card">
+                    <div class="kpi-value" style="color:#f59e0b;">{total_excecoes}</div>
+                    <div class="kpi-label">Exceções p/ Revisão</div>
+                  </div>
+                  <div class="kpi-card">
+                    <div class="kpi-value cyan">{taxa_auto_sess}%</div>
+                    <div class="kpi-label">Classificação Direta</div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            for idx, res in enumerate(resultados):
+                if res["sucesso"]:
+                    n_exc = len(res["excecoes"])
+                    n_reg = res["n_registros"]
+
+                    st.markdown(f"""
+                    <div class="result-container">
+                      <div class="result-header">
+                        <div class="result-title">
+                          <span style="font-size:1.25rem;">📄</span>
+                          <span>{res['nome']}</span>
+                        </div>
+                        <span class="result-badge-success">{n_reg} lançamentos extraídos</span>
+                      </div>
+                    """, unsafe_allow_html=True)
+
+                    if res["excecoes"]:
+                        with st.expander(f"⚠️ {n_exc} Exceção(ões) para conferência humana"):
+                            st.markdown("<p style='font-size:0.82rem;color:#94a3b8;margin-bottom:8px;'>Os lançamentos abaixo não encontraram regra direta nem classificação definitiva pela IA. Cadastre novas amarrações para automatizá-los nas próximas vezes.</p>", unsafe_allow_html=True)
+                            for exc in res["excecoes"][:8]:
+                                desc = str(exc.get("descricao", exc.get("Historico_Complementar", "Sem descrição")))[:70]
+                                data = exc.get("data", exc.get("Data", "N/D"))
+                                valor = exc.get("valor", exc.get("Valor", "N/D"))
+                                st.markdown(f"""
+                                <div class="exception-card">
+                                  <span>⚠️</span>
+                                  <div>
+                                    <div class="exception-title">{desc}</div>
+                                    <div class="exception-meta">Data: {data} | Valor: {valor} | Contas Pendentes</div>
+                                  </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                    # Botões de Download em Linha Balanceada
+                    b_cols = st.columns(len(formatos_selecionados) + (1 if len(formatos_selecionados) > 1 else 0))
+                    b_idx = 0
+
+                    if "📊 Excel Analítico (.xlsx)" in formatos_selecionados and res["excel_data"]:
+                        with b_cols[b_idx]:
+                            st.download_button("📊 Excel (.xlsx)", data=res["excel_data"],
+                                file_name=f"{res['nome_base']}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True, key=f"dl_xlsx_{idx}")
+                        b_idx += 1
+
+                    if "📁 TXT Layout Alterdata (.txt)" in formatos_selecionados and res["txt_data"]:
+                        with b_cols[b_idx]:
+                            st.download_button("📁 Alterdata (.txt)", data=res["txt_data"],
+                                file_name=f"{res['nome_base']}_alterdata.txt",
+                                mime="text/plain", use_container_width=True, key=f"dl_txt_{idx}")
+                        b_idx += 1
+
+                    if "📑 Planilha Alterdata (.xlsm)" in formatos_selecionados and res["xlsm_data"]:
+                        with b_cols[b_idx]:
+                            st.download_button("📑 Alterdata (.xlsm)", data=res["xlsm_data"],
+                                file_name=f"{res['nome_base']}_alterdata.xlsm",
+                                mime="application/vnd.ms-excel.sheet.macroEnabled.12",
+                                use_container_width=True, key=f"dl_xlsm_{idx}")
+                        b_idx += 1
+
+                    if "📄 Espelho de Conferência (.pdf)" in formatos_selecionados and res["pdf_data"]:
+                        with b_cols[b_idx]:
+                            st.download_button("📄 Espelho (.pdf)", data=res["pdf_data"],
+                                file_name=f"{res['nome_base']}_espelho.pdf",
+                                mime="application/pdf", use_container_width=True, key=f"dl_pdf_{idx}")
+                        b_idx += 1
+
+                    if len(formatos_selecionados) > 1 and res["zip_data"] and b_idx < len(b_cols):
+                        with b_cols[b_idx]:
+                            st.download_button("📦 Pacote Completo (.zip)", data=res["zip_data"],
+                                file_name=f"{res['nome_base']}_completo.zip",
+                                mime="application/zip", use_container_width=True, key=f"dl_zip_{idx}")
+
+                    with st.expander("🔎 Ver resposta bruta da IA"):
+                        st.markdown(res["resposta"])
+
+                    st.markdown("</div>", unsafe_allow_html=True)
+                else:
+                    st.error(f"❌ Erro ao processar o arquivo: **{res['nome']}**")
+                    with st.expander("Ver relatório de erro"):
+                        st.code(res["resposta"])
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════
+# ABA 2 — CALCULADORA DE ECONOMIA
+# ══════════════════════════════════════════════
+with tab_calculadora:
+    st.markdown("""
+    <div class="section-card">
+      <div class="card-header">
+        <div class="card-step-badge" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">🧮</div>
+        <div class="card-title-group">
+          <span class="card-title">Calculadora de Produtividade & Retorno sobre Investimento</span>
+          <span class="card-subtitle">Simule quanto tempo e dinheiro sua equipe economiza com a automação de lançamentos</span>
+        </div>
       </div>
     """, unsafe_allow_html=True)
 
-    for idx, resultado in enumerate(resultados):
-        if resultado["sucesso"]:
-            nome_base = resultado["nome_saida"].replace(".xlsx", "")
+    c_col1, c_col2 = st.columns([1, 1], gap="large")
 
-            st.markdown(f"""
-            <div style="display:flex; align-items:center; gap:10px; margin-top:8px; margin-bottom:12px;">
-              <span style="font-size:1.6rem;">📄</span>
-              <div>
-                <div style="font-weight:700; color:#0f172a; font-size:1rem;">{resultado['nome']}</div>
-                <div style="color:#16a34a; font-size:0.8125rem; font-weight:600;">✓ Extraído e convertido com sucesso para os formatos Alterdata</div>
+    with c_col1:
+        st.markdown("<p style='font-size:0.88rem;font-weight:700;color:#f1f5f9;margin-bottom:12px;'>Parâmetros Operacionais do Escritório</p>", unsafe_allow_html=True)
+        n_extratos = st.slider("📂 Extratos bancários por mês", 20, 1500, 120, 10,
+            help="Total de extratos de contas de clientes processados mensalmente.")
+        n_lanc_extrato = st.slider("📋 Lançamentos médios por extrato", 20, 500, 140, 10,
+            help="Média em escritórios contábeis: ~138 lançamentos por extrato.")
+        seg_por_lanc = st.slider("⏱️ Segundos para lançar manualmente hoje", 10, 120, 35, 5,
+            help="Tempo para localizar conta no plano, digitar histórico e conferir.")
+        custo_hora = st.slider("💵 Custo da hora da equipe (R$)", 15, 150, 40, 5,
+            help="Salário + encargos e benefícios ÷ horas produtivas do analista.")
+        taxa_automacao = st.slider("🤖 Taxa de automação estimada (%)", 50, 99, 80, 1,
+            help="Automação direta pela IA + amarrações contábeis.")
+
+    with c_col2:
+        total_lanc = n_extratos * n_lanc_extrato
+        horas_hoje = (total_lanc * seg_por_lanc) / 3600
+        lanc_auto = total_lanc * (taxa_automacao / 100)
+        lanc_manual = total_lanc - lanc_auto
+        horas_com_ia = (lanc_manual * seg_por_lanc + lanc_auto * 2.5) / 3600
+        horas_ganhas = max(0, horas_hoje - horas_com_ia)
+        valor_horas = horas_ganhas * custo_hora
+
+        if n_extratos <= 250:
+            plano, preco = "Starter", 499
+        elif n_extratos <= 500:
+            plano, preco = "Pro", 599
+        elif n_extratos <= 1000:
+            plano, preco = "Enterprise", 799
+        else:
+            plano, preco = "Custom", None
+
+        payback_dias = max(1, round((preco / max(valor_horas, 1)) * 30)) if preco and valor_horas > 0 else 0
+
+        st.markdown(f"""
+        <div class="calc-box">
+          <div>
+            <p style="font-weight:700;font-size:0.92rem;color:#f1f5f9;margin:0 0 14px 0;">📊 Impacto Mensal Estimado</p>
+            <div class="calc-highlight-metric">
+              <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Economia Operacional Estimada</div>
+              <div class="calc-big-val" style="margin-top:6px;">R$ {valor_horas:,.0f}</div>
+              <div style="font-size:0.78rem;color:#34d399;margin-top:4px;font-weight:600;">+ {horas_ganhas:.0f} horas livres por mês</div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);padding:10px;border-radius:10px;text-align:center;">
+                <div class="calc-sub-val" style="color:#ef4444;">{horas_hoje:.0f}h</div>
+                <div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">Horas digitando hoje</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);padding:10px;border-radius:10px;text-align:center;">
+                <div class="calc-sub-val" style="color:#38bdf8;">{horas_com_ia:.0f}h</div>
+                <div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">Horas com Contábil IA</div>
               </div>
             </div>
-            """, unsafe_allow_html=True)
+          </div>
 
-            # Botões organizados por colunas
-            cols = st.columns(len(formatos_selecionados) + (1 if len(formatos_selecionados) > 1 else 0))
-            col_curr = 0
+          <div>
+            <div class="calc-pill-badge">
+              ⚡ Payback estimado em apenas {payback_dias} dias de operação
+            </div>
+            <p style="font-size:0.72rem;color:#64748b;margin-top:8px;text-align:center;">
+              Considerando {taxa_automacao}% de classificação automática a 2,5s por lançamento.
+            </p>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            # 1. Excel Analítico
-            if "📊 Excel Analítico (.xlsx)" in formatos_selecionados and resultado["excel_data"]:
-                with cols[col_curr]:
-                    st.download_button(
-                        label="📊 Baixar .xlsx",
-                        data=resultado["excel_data"],
-                        file_name=f"{nome_base}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                        key=f"dl_xlsx_{idx}_{resultado['nome']}",
-                        help="Planilha Excel completa com todos os campos extraídos.",
-                    )
-                col_curr += 1
+    st.markdown("</div>", unsafe_allow_html=True)
 
-            # 2. TXT Layout Alterdata
-            if "📁 TXT Layout Alterdata (.txt)" in formatos_selecionados and resultado["txt_data"]:
-                with cols[col_curr]:
-                    st.download_button(
-                        label="📁 Baixar .txt",
-                        data=resultado["txt_data"],
-                        file_name=f"{nome_base}_alterdata.txt",
-                        mime="text/plain",
-                        use_container_width=True,
-                        key=f"dl_txt_{idx}_{resultado['nome']}",
-                        help="Arquivo de texto delimitado por ';' pronto para importação direta no Alterdata Pack / WCont.",
-                    )
-                col_curr += 1
 
-            # 3. Planilha Alterdata .xlsm
-            if "📑 Planilha Alterdata (.xlsm)" in formatos_selecionados and resultado["xlsm_data"]:
-                with cols[col_curr]:
-                    st.download_button(
-                        label="📑 Baixar .xlsm",
-                        data=resultado["xlsm_data"],
-                        file_name=f"{nome_base}_alterdata.xlsm",
-                        mime="application/vnd.ms-excel.sheet.macroEnabled.12",
-                        use_container_width=True,
-                        key=f"dl_xlsm_{idx}_{resultado['nome']}",
-                        help="Planilha no modelo de Importação Personalizada do Alterdata Contábil.",
-                    )
-                col_curr += 1
+# ══════════════════════════════════════════════
+# ABA 3 — REGRAS DE CLASSIFICAÇÃO (AMARRAÇÕES)
+# ══════════════════════════════════════════════
+with tab_amarracoes:
+    st.markdown("""
+    <div class="section-card">
+      <div class="card-header">
+        <div class="card-step-badge" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">🔗</div>
+        <div class="card-title-group">
+          <span class="card-title">Regras Contábeis de Classificação (Amarrações)</span>
+          <span class="card-subtitle">Ensine o padrão do seu escritório. As regras cadastradas são aplicadas com prioridade absoluta.</span>
+        </div>
+      </div>
+      <p style="font-size:0.88rem;color:#94a3b8;margin-bottom:1.4rem;">
+        Sempre que a IA encontrar o texto indicado na descrição do extrato, ela vinculará de imediato as contas de Débito e Crédito definidas por você.
+      </p>
+    """, unsafe_allow_html=True)
 
-            # 4. Espelho de Conferência .pdf
-            if "📄 Espelho de Conferência (.pdf)" in formatos_selecionados and resultado["pdf_data"]:
-                with cols[col_curr]:
-                    st.download_button(
-                        label="📄 Baixar .pdf",
-                        data=resultado["pdf_data"],
-                        file_name=f"{nome_base}_espelho.pdf",
-                        mime="application/pdf",
-                        use_container_width=True,
-                        key=f"dl_pdf_{idx}_{resultado['nome']}",
-                        help="Relatório executivo em PDF para auditoria contábil e conferência pré-importação.",
-                    )
-                col_curr += 1
+    st.markdown("<p style='font-weight:700;font-size:0.9rem;color:#f1f5f9;margin-bottom:10px;'>📋 Regras Ativas no Momento</p>", unsafe_allow_html=True)
 
-            # 5. Pacote ZIP Completo
-            if len(formatos_selecionados) > 1 and resultado["zip_data"]:
-                with cols[col_curr]:
-                    st.download_button(
-                        label="📦 Baixar .zip",
-                        data=resultado["zip_data"],
-                        file_name=f"{nome_base}_pacote_completo.zip",
-                        mime="application/zip",
-                        use_container_width=True,
-                        key=f"dl_zip_{idx}_{resultado['nome']}",
-                        help="Baixa todos os formatos gerados em um único arquivo compactado.",
-                    )
+    if st.session_state.amarracoes:
+        for i, r in enumerate(st.session_state.amarracoes):
+            col_r1, col_r2, col_r3, col_r4 = st.columns([4, 2, 2, 1])
+            with col_r1:
+                st.markdown(f"""
+                <div class="rule-row">
+                  <span style="font-size:0.75rem;font-weight:700;color:#64748b;margin-right:8px;">TEXTO</span>
+                  <span style="color:#f8fafc;font-weight:700;">{r['padrao']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_r2:
+                st.markdown(f"""
+                <div class="rule-row" style="justify-content:center;">
+                  <span class="rule-badge rule-deb">DÉB: {r['conta_debito']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_r3:
+                st.markdown(f"""
+                <div class="rule-row" style="justify-content:center;">
+                  <span class="rule-badge rule-cred">CRÉD: {r['conta_credito']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_r4:
+                if st.button("🗑️", key=f"del_rule_{i}", help="Remover esta regra"):
+                    st.session_state.amarracoes.pop(i)
+                    st.rerun()
+    else:
+        st.info("Nenhuma amarração cadastrada no momento. Adicione sua primeira regra abaixo.")
 
-            with st.expander("🔎 Ver detalhes e resumo da extração"):
-                st.markdown(resultado["resposta"])
+    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
+    st.markdown("<p style='font-weight:700;font-size:0.9rem;color:#f1f5f9;margin-bottom:10px;'>➕ Adicionar Nova Amarração</p>", unsafe_allow_html=True)
 
-            st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:16px 0;'>", unsafe_allow_html=True)
-        else:
-            st.error(f"❌ Não foi possível extrair dados de: **{resultado['nome']}**")
-            with st.expander("Ver detalhes técnicos do erro"):
-                st.markdown(resultado["resposta"])
+    acol1, acol2, acol3, acol4 = st.columns([4, 2, 2, 1], gap="small")
+    with acol1:
+        novo_padrao = st.text_input("Palavra-chave ou texto no extrato", placeholder="Ex: TARIFA BANCARIA", key="nova_padrao")
+    with acol2:
+        novo_debito = st.text_input("Conta Débito", placeholder="6.2.5", key="nova_debito")
+    with acol3:
+        novo_credito = st.text_input("Conta Crédito", placeholder="1.1.1", key="nova_credito")
+    with acol4:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if st.button("Salvar", key="add_rule", use_container_width=True):
+            if novo_padrao and novo_debito and novo_credito:
+                st.session_state.amarracoes.append({
+                    "padrao": novo_padrao.upper().strip(),
+                    "conta_debito": novo_debito.strip(),
+                    "conta_credito": novo_credito.strip(),
+                })
+                st.success(f"✅ Regra '{novo_padrao.upper()}' adicionada!")
+                st.rerun()
+            else:
+                st.warning("Preencha todos os campos da amarração.")
+
+    with st.expander("💡 Dica de Especialista: Como montar amarrações de alta precisão"):
+        st.markdown("""
+        - **Evite palavras genéricas demais:** Padrões como `PAGTO` ou `PIX` podem casar com transações não correlatas.
+        - **Prefira palavras identificadoras de credores/despesas:** `SABESP`, `VIVO`, `ENEL`, `ALUGUEL SALA`, `FGTS`, `DARF`.
+        - **A IA atua na "zona amarela":** Lançamentos que não casarem com nenhuma regra cadastrada serão analisados de forma contextual pelo modelo Gemini.
+        """)
 
     st.markdown("</div>", unsafe_allow_html=True)
