@@ -42,31 +42,31 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     :root {
-        --bg-main: #070d18;
-        --bg-surface: #0f172a;
-        --bg-card: rgba(17, 26, 46, 0.85);
-        --bg-card-hover: rgba(23, 35, 62, 0.95);
-        --bg-glass: rgba(15, 23, 42, 0.65);
+        --bg-main: #0a0f1d;
+        --bg-surface: #131d35;
+        --bg-card: rgba(19, 29, 53, 0.75);
+        --bg-card-hover: rgba(26, 39, 70, 0.85);
+        --bg-glass: rgba(15, 23, 42, 0.75);
         
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
+        --text-primary: #ffffff;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
         
         --primary: #3b82f6;
         --primary-hover: #2563eb;
-        --primary-light: #60a5fa;
-        --primary-glow: rgba(59, 130, 246, 0.25);
+        --primary-light: #93c5fd;
+        --primary-glow: rgba(59, 130, 246, 0.2);
         
-        --accent: #06b6d4;
-        --accent-glow: rgba(6, 182, 212, 0.2);
-        --success: #10b981;
-        --success-glow: rgba(16, 185, 129, 0.2);
-        --warning: #f59e0b;
-        --warning-glow: rgba(245, 158, 11, 0.2);
-        --danger: #ef4444;
+        --accent: #38bdf8;
+        --accent-glow: rgba(56, 189, 248, 0.2);
+        --success: #34d399;
+        --success-glow: rgba(52, 211, 153, 0.2);
+        --warning: #fbbf24;
+        --warning-glow: rgba(251, 191, 36, 0.2);
+        --danger: #f87171;
         
-        --border-subtle: rgba(255, 255, 255, 0.07);
-        --border-highlight: rgba(59, 130, 246, 0.35);
+        --border-subtle: rgba(148, 163, 184, 0.16);
+        --border-highlight: rgba(96, 165, 250, 0.4);
         --radius-lg: 16px;
         --radius-md: 12px;
         --radius-sm: 8px;
@@ -81,8 +81,9 @@ st.markdown("""
         letter-spacing: -0.01em;
     }
 
+    /* Gradiente de fundo aveludado, suave e uniforme */
     .stApp {
-        background: radial-gradient(circle at 50% -15%, #172a4d 0%, #0a0f1d 45%, #050811 100%) fixed !important;
+        background: radial-gradient(ellipse 80% 50% at 50% -10%, #1e2e4a 0%, #0f172a 60%, #0a0f1d 100%) fixed !important;
     }
 
     /* Container com proporção equilibrada */
@@ -136,10 +137,10 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.25);
-        color: #6ee7b7;
-        font-size: 0.76rem;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        color: #a7f3d0;
+        font-size: 0.78rem;
         font-weight: 700;
         padding: 5px 14px;
         border-radius: 999px;
@@ -168,10 +169,10 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(59, 130, 246, 0.08);
-        border: 1px solid rgba(59, 130, 246, 0.25);
-        color: #93c5fd;
-        font-size: 0.78rem;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(96, 165, 250, 0.35);
+        color: #bfdbfe;
+        font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -182,20 +183,22 @@ st.markdown("""
     .hero-title {
         font-size: clamp(2.2rem, 4.2vw, 3.4rem);
         font-weight: 800;
-        line-height: 1.15;
-        color: var(--text-primary);
+        line-height: 1.2;
+        color: #ffffff;
         margin-bottom: 1rem;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.03em;
     }
+    /* Gradiente suave, luminoso e legível */
     .hero-title .grad {
-        background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #34d399 100%);
+        background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 50%, #818cf8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        font-weight: 800;
     }
     .hero-subtitle {
         font-size: 1.05rem;
-        color: var(--text-secondary);
-        max-width: 660px;
+        color: #cbd5e1 !important;
+        max-width: 680px;
         margin: 0 auto 2.2rem auto;
         line-height: 1.65;
         font-weight: 400;
@@ -223,68 +226,69 @@ st.markdown("""
         transition: all 0.25s ease;
     }
     .kpi-card:hover {
-        border-color: rgba(59, 130, 246, 0.3);
+        border-color: rgba(96, 165, 250, 0.4);
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0,0,0,0.3);
     }
     .kpi-icon {
-        font-size: 1.15rem;
+        font-size: 1.2rem;
         margin-bottom: 6px;
     }
     .kpi-value {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 800;
-        color: var(--text-primary);
+        color: #ffffff;
         letter-spacing: -0.03em;
         line-height: 1.1;
     }
-    .kpi-value.blue { color: #60a5fa; }
-    .kpi-value.emerald { color: #34d399; }
-    .kpi-value.cyan { color: #38bdf8; }
+    .kpi-value.blue { color: #93c5fd; }
+    .kpi-value.emerald { color: #6ee7b7; }
+    .kpi-value.cyan { color: #7dd3fc; }
     .kpi-label {
-        font-size: 0.74rem;
-        color: var(--text-muted);
+        font-size: 0.78rem;
+        color: #94a3b8;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        margin-top: 5px;
+        margin-top: 6px;
     }
 
-    /* Estilização Moderna de Abas */
+    /* Estilização Moderna de Abas com Alto Contraste */
     [data-testid="stTabs"] {
         margin-bottom: 2rem;
     }
     [data-testid="stTabs"] [data-baseweb="tab-list"] {
         display: flex !important;
         justify-content: center !important;
-        background: rgba(15, 23, 42, 0.75) !important;
+        background: rgba(19, 29, 53, 0.85) !important;
         border-radius: 999px !important;
         border: 1px solid var(--border-subtle) !important;
-        padding: 5px !important;
-        gap: 6px !important;
+        padding: 6px !important;
+        gap: 8px !important;
         backdrop-filter: blur(12px) !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab"] {
         border-radius: 999px !important;
-        color: var(--text-secondary) !important;
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        font-size: 0.92rem !important;
         padding: 0.65rem 1.6rem !important;
         transition: all 0.2s ease !important;
         border: none !important;
         background: transparent !important;
-        -webkit-text-fill-color: var(--text-secondary) !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab"]:hover {
-        color: var(--text-primary) !important;
-        -webkit-text-fill-color: var(--text-primary) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.06) !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
         font-weight: 700 !important;
-        box-shadow: 0 4px 18px rgba(37, 99, 235, 0.4) !important;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4) !important;
     }
     [data-testid="stTabs"] [data-baseweb="tab-highlight"],
     [data-testid="stTabs"] [data-baseweb="tab-border"] {
@@ -298,16 +302,16 @@ st.markdown("""
         border-radius: 20px;
         padding: clamp(1.4rem, 2.5vw, 1.85rem);
         margin-bottom: 1.5rem;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
         backdrop-filter: blur(14px);
         transition: border-color 0.25s ease;
     }
     .section-card:hover {
-        border-color: rgba(255, 255, 255, 0.12);
+        border-color: rgba(148, 163, 184, 0.28);
     }
     .section-card.highlight {
-        border-color: rgba(16, 185, 129, 0.35);
-        background: linear-gradient(145deg, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border-color: rgba(52, 211, 153, 0.4);
+        background: linear-gradient(145deg, rgba(52, 211, 153, 0.06) 0%, rgba(19, 29, 53, 0.9) 100%);
     }
 
     .card-header {
@@ -324,7 +328,7 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #ffffff;
         font-size: 0.95rem;
         font-weight: 800;
         flex-shrink: 0;
@@ -335,36 +339,44 @@ st.markdown("""
         flex-direction: column;
     }
     .card-title {
-        font-size: 1.12rem;
+        font-size: 1.15rem;
         font-weight: 700;
-        color: var(--text-primary);
+        color: #f8fafc;
         letter-spacing: -0.02em;
     }
     .card-subtitle {
-        font-size: 0.82rem;
-        color: var(--text-muted);
+        font-size: 0.85rem;
+        color: #94a3b8;
         margin-top: 2px;
         font-weight: 500;
     }
 
-    /* Uploader customizado */
+    /* Uploader customizado com Alto Contraste */
     [data-testid="stFileUploadDropzone"] {
         border-radius: 16px !important;
         padding: 2.2rem 1.5rem !important;
-        background: rgba(59, 130, 246, 0.02) !important;
-        border: 2px dashed rgba(59, 130, 246, 0.25) !important;
+        background: rgba(19, 29, 53, 0.6) !important;
+        border: 2px dashed rgba(96, 165, 250, 0.35) !important;
+        color: #cbd5e1 !important;
         transition: all 0.25s ease !important;
     }
     [data-testid="stFileUploadDropzone"]:hover {
-        border-color: rgba(59, 130, 246, 0.55) !important;
-        background: rgba(59, 130, 246, 0.06) !important;
+        border-color: rgba(96, 165, 250, 0.65) !important;
+        background: rgba(26, 39, 70, 0.75) !important;
+    }
+    [data-testid="stFileUploadDropzone"] * {
+        color: #cbd5e1 !important;
     }
     [data-testid="stFileUploadDropzone"] button {
-        background: rgba(59, 130, 246, 0.15) !important;
-        border: 1px solid rgba(59, 130, 246, 0.3) !important;
-        color: #93c5fd !important;
+        background: rgba(59, 130, 246, 0.18) !important;
+        border: 1px solid rgba(96, 165, 250, 0.4) !important;
+        color: #bfdbfe !important;
         font-weight: 600 !important;
         border-radius: 10px !important;
+    }
+    [data-testid="stFileUploadDropzone"] button:hover {
+        background: rgba(59, 130, 246, 0.32) !important;
+        color: #ffffff !important;
     }
 
     /* Categorias de Formatos (Pills) */
@@ -374,12 +386,12 @@ st.markdown("""
         border-top: 1px solid var(--border-subtle);
     }
     .formats-label {
-        font-size: 0.74rem;
+        font-size: 0.76rem;
         font-weight: 700;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: #94a3b8;
         letter-spacing: 0.05em;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
     .pills-group {
         display: flex;
@@ -390,8 +402,8 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.05);
+        color: #e2e8f0;
         font-size: 0.78rem;
         font-weight: 500;
         padding: 5px 13px;
@@ -400,61 +412,87 @@ st.markdown("""
         transition: all 0.2s ease;
     }
     .pill:hover {
-        border-color: rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.07);
+        border-color: rgba(96, 165, 250, 0.4);
+        background: rgba(59, 130, 246, 0.12);
+        color: #ffffff;
     }
     .pill.bank {
-        background: rgba(6, 182, 212, 0.08);
-        border-color: rgba(6, 182, 212, 0.22);
-        color: #7dd3fc;
+        background: rgba(6, 182, 212, 0.12);
+        border-color: rgba(6, 182, 212, 0.3);
+        color: #bae6fd;
     }
 
-    /* Inputs, Selectboxes e Textarea */
+    /* Inputs, Selectboxes e Textarea com Alto Contraste */
     [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] *, label, label * {
-        color: var(--text-secondary) !important;
-        -webkit-text-fill-color: var(--text-secondary) !important;
+        color: #e2e8f0 !important;
+        -webkit-text-fill-color: #e2e8f0 !important;
         font-weight: 600 !important;
-        font-size: 0.85rem !important;
-        margin-bottom: 4px !important;
+        font-size: 0.88rem !important;
+        margin-bottom: 5px !important;
     }
-    [data-testid="stSelectbox"] > div > div, div[data-baseweb="select"] > div {
+    [data-testid="stSelectbox"] > div > div, 
+    div[data-baseweb="select"] > div {
         background-color: var(--bg-surface) !important;
         border: 1.5px solid var(--border-subtle) !important;
         border-radius: 12px !important;
         min-height: 44px !important;
+        color: #f8fafc !important;
     }
-    [data-testid="stSelectbox"] > div > div:focus-within, div[data-baseweb="select"] > div:focus-within {
-        border-color: var(--primary) !important;
+    [data-testid="stSelectbox"] > div > div:focus-within, 
+    div[data-baseweb="select"] > div:focus-within {
+        border-color: var(--primary-light) !important;
         box-shadow: 0 0 0 3px var(--primary-glow) !important;
     }
-    [data-testid="stSelectbox"] * {
-        color: var(--text-primary) !important;
-        -webkit-text-fill-color: var(--text-primary) !important;
+    div[data-baseweb="select"] span {
+        color: #f8fafc !important;
+    }
+    /* Menu Popover/Dropdown BaseWeb */
+    div[data-baseweb="popover"], 
+    ul[role="listbox"] {
+        background-color: #131d35 !important;
+        border: 1px solid rgba(148, 163, 184, 0.25) !important;
+        border-radius: 12px !important;
+    }
+    li[role="option"] {
+        background-color: #131d35 !important;
+        color: #f1f5f9 !important;
+    }
+    li[role="option"]:hover, 
+    li[role="option"][aria-selected="true"] {
+        background-color: #1e293b !important;
+        color: #93c5fd !important;
     }
 
-    [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input {
+    [data-testid="stTextArea"] textarea, 
+    [data-testid="stTextInput"] input {
         background-color: var(--bg-surface) !important;
         border: 1.5px solid var(--border-subtle) !important;
         border-radius: 12px !important;
-        color: var(--text-primary) !important;
-        -webkit-text-fill-color: var(--text-primary) !important;
+        color: #f8fafc !important;
+        -webkit-text-fill-color: #f8fafc !important;
         font-size: 0.88rem !important;
         padding: 0.75rem 1rem !important;
     }
-    [data-testid="stTextArea"] textarea:focus, [data-testid="stTextInput"] input:focus {
-        border-color: var(--primary) !important;
+    [data-testid="stTextArea"] textarea::placeholder, 
+    [data-testid="stTextInput"] input::placeholder {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+    }
+    [data-testid="stTextArea"] textarea:focus, 
+    [data-testid="stTextInput"] input:focus {
+        border-color: var(--primary-light) !important;
         box-shadow: 0 0 0 3px var(--primary-glow) !important;
     }
 
     /* Tags no MultiSelect */
     [data-testid="stMultiSelect"] [data-baseweb="tag"] {
-        background: rgba(59, 130, 246, 0.18) !important;
-        border: 1px solid rgba(59, 130, 246, 0.35) !important;
+        background: rgba(59, 130, 246, 0.22) !important;
+        border: 1px solid rgba(96, 165, 250, 0.4) !important;
         border-radius: 8px !important;
     }
     [data-testid="stMultiSelect"] [data-baseweb="tag"] span {
-        color: #93c5fd !important;
-        -webkit-text-fill-color: #93c5fd !important;
+        color: #bfdbfe !important;
+        -webkit-text-fill-color: #bfdbfe !important;
         font-weight: 600 !important;
     }
 
@@ -489,8 +527,8 @@ st.markdown("""
         gap: 20px;
         align-items: center;
         margin-top: 1.25rem;
-        padding: 0.85rem;
-        background: rgba(255, 255, 255, 0.02);
+        padding: 0.9rem 1.2rem;
+        background: rgba(19, 29, 53, 0.6);
         border: 1px solid var(--border-subtle);
         border-radius: 12px;
         flex-wrap: wrap;
@@ -499,12 +537,12 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        color: var(--text-muted);
-        font-size: 0.78rem;
+        color: #cbd5e1;
+        font-size: 0.8rem;
         font-weight: 600;
     }
     .trust-check {
-        color: var(--success);
+        color: #34d399;
         font-weight: 800;
     }
 
@@ -531,36 +569,37 @@ st.markdown("""
         gap: 10px;
     }
     .result-badge-success {
-        background: rgba(16, 185, 129, 0.12);
+        background: rgba(16, 185, 129, 0.15);
         color: #6ee7b7;
-        font-size: 0.75rem;
+        font-size: 0.78rem;
         font-weight: 700;
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 999px;
-        border: 1px solid rgba(16, 185, 129, 0.25);
+        border: 1px solid rgba(52, 211, 153, 0.35);
     }
 
     .stDownloadButton > button {
-        background: rgba(59, 130, 246, 0.1) !important;
-        color: #93c5fd !important;
-        border: 1px solid rgba(59, 130, 246, 0.25) !important;
+        background: rgba(59, 130, 246, 0.15) !important;
+        color: #bfdbfe !important;
+        border: 1px solid rgba(96, 165, 250, 0.35) !important;
         border-radius: 10px !important;
         font-weight: 600 !important;
-        font-size: 0.84rem !important;
+        font-size: 0.86rem !important;
         padding: 0.65rem 1rem !important;
         box-shadow: none !important;
         transition: all 0.2s ease !important;
     }
     .stDownloadButton > button:hover {
-        background: rgba(59, 130, 246, 0.2) !important;
-        border-color: rgba(59, 130, 246, 0.5) !important;
+        background: rgba(59, 130, 246, 0.28) !important;
+        border-color: rgba(96, 165, 250, 0.6) !important;
+        color: #ffffff !important;
         transform: translateY(-1px) !important;
     }
 
     /* Painel de Exceções */
     .exception-card {
-        background: rgba(245, 158, 11, 0.07);
-        border: 1px solid rgba(245, 158, 11, 0.2);
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(251, 191, 36, 0.3);
         border-radius: 12px;
         padding: 0.85rem 1rem;
         margin-bottom: 8px;
@@ -570,20 +609,20 @@ st.markdown("""
     }
     .exception-title {
         font-weight: 700;
-        font-size: 0.88rem;
-        color: #fde68a;
+        font-size: 0.9rem;
+        color: #fef08a;
     }
     .exception-meta {
-        font-size: 0.78rem;
-        color: #d1d5db;
+        font-size: 0.8rem;
+        color: #e2e8f0;
         margin-top: 3px;
         font-family: 'JetBrains Mono', monospace;
     }
 
     /* Calculadora de Economia */
     .calc-box {
-        background: linear-gradient(145deg, #101c36 0%, #0c1527 100%);
-        border: 1px solid rgba(59, 130, 246, 0.25);
+        background: linear-gradient(145deg, #131d35 0%, #0d1527 100%);
+        border: 1px solid rgba(96, 165, 250, 0.3);
         border-radius: 20px;
         padding: 1.5rem;
         height: 100%;
@@ -592,7 +631,7 @@ st.markdown("""
         justify-content: space-between;
     }
     .calc-highlight-metric {
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--border-subtle);
         border-radius: 14px;
         padding: 1.25rem;
@@ -609,15 +648,15 @@ st.markdown("""
     .calc-sub-val {
         font-size: 1.35rem;
         font-weight: 800;
-        color: #60a5fa;
+        color: #93c5fd;
     }
     .calc-pill-badge {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(56, 189, 248, 0.12) 100%);
+        border: 1px solid rgba(52, 211, 153, 0.35);
         border-radius: 12px;
         padding: 0.85rem 1.15rem;
         color: #6ee7b7;
-        font-size: 0.88rem;
+        font-size: 0.9rem;
         font-weight: 700;
         text-align: center;
         margin-top: 10px;
@@ -625,7 +664,7 @@ st.markdown("""
 
     /* Amarrações / Regras */
     .rule-row {
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--border-subtle);
         border-radius: 12px;
         padding: 0.75rem 1rem;
@@ -633,19 +672,19 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 0.86rem;
+        font-size: 0.88rem;
     }
     .rule-badge {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
+        font-size: 0.76rem;
         font-weight: 600;
         padding: 3px 8px;
         border-radius: 6px;
     }
-    .rule-deb { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
-    .rule-cred { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+    .rule-deb { background: rgba(59, 130, 246, 0.2); color: #bfdbfe; }
+    .rule-cred { background: rgba(16, 185, 129, 0.2); color: #a7f3d0; }
 
-    /* Estilização de Expander */
+    /* Estilização de Expander com Alto Contraste */
     [data-testid="stExpander"] {
         border: 1px solid var(--border-subtle) !important;
         border-radius: 14px !important;
@@ -654,16 +693,25 @@ st.markdown("""
         overflow: hidden !important;
     }
     [data-testid="stExpander"] summary {
-        background-color: rgba(255, 255, 255, 0.02) !important;
+        background-color: rgba(255, 255, 255, 0.03) !important;
         padding: 0.85rem 1.25rem !important;
-        border-bottom: 1px solid transparent !important;
+        color: #f1f5f9 !important;
+        font-weight: 600 !important;
+    }
+    [data-testid="stExpander"] summary * {
+        color: #f1f5f9 !important;
+        -webkit-text-fill-color: #f1f5f9 !important;
     }
     [data-testid="stExpander"] summary:hover {
-        background-color: rgba(255, 255, 255, 0.04) !important;
+        background-color: rgba(255, 255, 255, 0.06) !important;
     }
     [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
         padding: 1.25rem !important;
         background-color: var(--bg-surface) !important;
+        color: #e2e8f0 !important;
+    }
+    [data-testid="stExpander"] [data-testid="stExpanderDetails"] * {
+        color: #e2e8f0 !important;
     }
 
     hr.divider {
@@ -1259,37 +1307,35 @@ with tab_calculadora:
         payback_dias = max(1, round((preco / max(valor_horas, 1)) * 30)) if preco and valor_horas > 0 else 0
 
         st.markdown(f"""
-        <div class="calc-box">
-          <div>
-            <p style="font-weight:700;font-size:0.92rem;color:#f1f5f9;margin:0 0 14px 0;">📊 Impacto Mensal Estimado</p>
-            <div class="calc-highlight-metric">
-              <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Economia Operacional Estimada</div>
-              <div class="calc-big-val" style="margin-top:6px;">R$ {valor_horas:,.0f}</div>
-              <div style="font-size:0.78rem;color:#34d399;margin-top:4px;font-weight:600;">+ {horas_ganhas:.0f} horas livres por mês</div>
-            </div>
-            
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);padding:10px;border-radius:10px;text-align:center;">
-                <div class="calc-sub-val" style="color:#ef4444;">{horas_hoje:.0f}h</div>
-                <div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">Horas digitando hoje</div>
-              </div>
-              <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);padding:10px;border-radius:10px;text-align:center;">
-                <div class="calc-sub-val" style="color:#38bdf8;">{horas_com_ia:.0f}h</div>
-                <div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">Horas com Contábil IA</div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div class="calc-pill-badge">
-              ⚡ Payback estimado em apenas {payback_dias} dias de operação
-            </div>
-            <p style="font-size:0.72rem;color:#64748b;margin-top:8px;text-align:center;">
-              Considerando {taxa_automacao}% de classificação automática a 2,5s por lançamento.
-            </p>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="calc-box">
+  <div>
+    <p style="font-weight:700;font-size:0.92rem;color:#f1f5f9;margin:0 0 14px 0;">📊 Impacto Mensal Estimado</p>
+    <div class="calc-highlight-metric">
+      <div style="font-size:0.75rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.04em;">Economia Operacional Estimada</div>
+      <div class="calc-big-val" style="margin-top:6px;">R$ {valor_horas:,.0f}</div>
+      <div style="font-size:0.78rem;color:#34d399;margin-top:4px;font-weight:600;">+ {horas_ganhas:.0f} horas livres por mês</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:10px;border-radius:10px;text-align:center;">
+        <div class="calc-sub-val" style="color:#f87171;">{horas_hoje:.0f}h</div>
+        <div style="font-size:0.72rem;color:#cbd5e1;margin-top:3px;">Horas digitando hoje</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:10px;border-radius:10px;text-align:center;">
+        <div class="calc-sub-val" style="color:#38bdf8;">{horas_com_ia:.0f}h</div>
+        <div style="font-size:0.72rem;color:#cbd5e1;margin-top:3px;">Horas com Contábil IA</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="calc-pill-badge">
+      ⚡ Payback estimado em apenas {payback_dias} dias de operação
+    </div>
+    <p style="font-size:0.75rem;color:#94a3b8;margin-top:8px;text-align:center;">
+      Considerando {taxa_automacao}% de classificação automática a 2,5s por lançamento.
+    </p>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
